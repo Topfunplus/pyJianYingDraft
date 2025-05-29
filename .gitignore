@@ -11,3 +11,7 @@ dist/
 
 .venv/
 venv/
+
+node_modules/
+pnpm-lock.yaml
+

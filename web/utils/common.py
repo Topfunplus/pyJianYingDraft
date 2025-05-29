@@ -6,7 +6,7 @@ from flask import jsonify
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import pyJianYingDraft as draft
 from config.settings import get_asset_path, get_output_path
-from logger_config import setup_logger
+from logs.logger import setup_logger
 
 
 # 设置日志记录器
