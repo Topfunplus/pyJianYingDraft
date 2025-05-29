@@ -1,13 +1,13 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ConfigProvider, theme, App as AntApp } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
-import Layout from '@/components/Layout';
-import Dashboard from '@/pages/Dashboard';
-import ApiTest from '@/pages/ApiTest';
-import ProjectManager from '@/pages/ProjectManager';
-import './App.css';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConfigProvider, theme, App as AntApp } from "antd";
+import zhCN from "antd/locale/zh_CN";
+import Layout from "@/components/Layout";
+import Dashboard from "@/pages/Dashboard";
+import ApiTest from "@/pages/ApiTest";
+import ProjectManager from "@/pages/ProjectManager";
+import "./App.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,18 +27,17 @@ const App: React.FC = () => {
         theme={{
           algorithm: theme.defaultAlgorithm,
           token: {
-            colorPrimary: '#1890ff',
+            colorPrimary: "#1890ff",
             borderRadius: 8,
-            colorBgContainer: '#ffffff',
+            colorBgContainer: "#ffffff",
           },
           components: {
             Layout: {
-              siderBg: '#ffffff',
-              headerBg: '#ffffff',
+              siderBg: "#ffffff",
+              headerBg: "#ffffff",
             },
           },
-        }}
-      >
+        }}>
         <AntApp>
           <Router>
             <Layout>

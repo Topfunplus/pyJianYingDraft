@@ -7,7 +7,6 @@ import { apiService, ProjectConfig } from '../services/api';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
-const { TextArea } = Input;
 
 const ApiTest: React.FC = () => {
   const [form] = Form.useForm();
