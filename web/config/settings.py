@@ -2,8 +2,8 @@ import os
 import time
 
 # 基础配置
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-WEB_OUTPUT_DIR = r"I:\测试文件夹\web_outputs"
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+WEB_OUTPUT_DIR = r"C:\\Users\\zxsm\Desktop\\工作记录及模板\\剪影自动化脚本\\pyJianYingDraft\web_outputs"
 TUTORIAL_ASSET_DIR = os.path.join(BASE_DIR, 'readme_assets', 'tutorial')
 
 # 确保输出目录存在
