@@ -8,10 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import pyJianYingDraft as draft
 from pyJianYingDraft import trange, tim
 
-from ..utils.common import (
-    api_error_handler, create_and_save_script, create_basic_script, 
-    get_asset_path, logger
-)
+from ..utils.common import (api_error_handler, create_and_save_script, create_basic_script, logger)
 
 @api_error_handler
 def handle_text_segment():

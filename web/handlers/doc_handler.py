@@ -1,4 +1,3 @@
-import os
 from flask import jsonify, render_template_string
 
 def show_documentation():

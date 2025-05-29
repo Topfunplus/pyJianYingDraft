@@ -31,6 +31,9 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False  # 支持中文JSON
 app.config['JSONIFY_MIMETYPE'] = 'application/json; charset=utf-8'
 
+# 初始化异常信息变量
+api_import_error = None
+
 # 注册Blueprint
 try:
     from api_handlers import api_bp
@@ -38,14 +41,14 @@ try:
     logger.info("✅ 成功注册API Blueprint")
     
 except ImportError as e:
+    api_import_error = str(e)
     logger.error(f"❌ 无法导入API Blueprint: {e}")
-    
     # 创建备用根路由
     @app.route('/')
     def fallback_root():
         return jsonify({
             "error": "API Blueprint导入失败",
-            "message": str(e),
+            "message": api_import_error,
             "fallback": True
         })
 
