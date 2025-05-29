@@ -4,13 +4,11 @@ import uuid
 from flask import Blueprint, jsonify, request
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+web_dir = os.path.dirname(__file__)
+sys.path.insert(0, web_dir)
 import pyJianYingDraft as draft
 from pyJianYingDraft import Track_type, trange, tim
 from handlers.doc_handler import show_documentation 
-
-# 添加web目录到系统路径
-web_dir = os.path.dirname(__file__)
-sys.path.insert(0, web_dir)
 
 # 使用绝对导入
 try:

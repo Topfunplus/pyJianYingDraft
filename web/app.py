@@ -1,56 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 pyJianYingDraft Web Application
 """
-
-import os
-import sys
 from flask import Flask, jsonify
-
-# 添加项目路径
-web_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(web_dir)
-sys.path.insert(0, web_dir)
-sys.path.insert(0, project_root)
-
 # 配置日志
-try:
-    from logger_config import setup_logger
-    logger = setup_logger('WebApp')
-except ImportError:
-    import logging
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger('WebApp')
+from logs.logger import setup_logger
+logger = setup_logger('WebApp')
 
 # 创建Flask应用
 app = Flask(__name__)
-
 # 配置
 app.config['JSON_AS_ASCII'] = False  # 支持中文JSON
 app.config['JSONIFY_MIMETYPE'] = 'application/json; charset=utf-8'
-
 # 初始化异常信息变量
 api_import_error = None
-
 # 注册Blueprint
-try:
-    from api_handlers import api_bp
-    app.register_blueprint(api_bp)
-    logger.info("✅ 成功注册API Blueprint")
+from api_handlers import api_bp
+app.register_blueprint(api_bp)
+logger.info("✅ 成功注册API Blueprint")
     
-except ImportError as e:
-    api_import_error = str(e)
-    logger.error(f"❌ 无法导入API Blueprint: {e}")
-    # 创建备用根路由
-    @app.route('/')
-    def fallback_root():
-        return jsonify({
-            "error": "API Blueprint导入失败",
-            "message": api_import_error,
-            "fallback": True
-        })
+
 
 # 错误处理
 @app.errorhandler(404)

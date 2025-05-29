@@ -1,58 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 pyJianYingDraft Web Service 启动脚本
 """
-
-import os
 import sys
-
-# 设置当前工作目录为web目录
-web_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(web_dir)
-
-# 添加web目录到Python路径
-sys.path.insert(0, web_dir)
-
-# 添加项目根目录到Python路径
-project_root = os.path.dirname(web_dir)
-sys.path.insert(0, project_root)
-
-print(f"📁 当前工作目录: {os.getcwd()}")
-print(f"📂 Web目录: {web_dir}")
-print(f"📂 项目根目录: {project_root}")
-print(f"🐍 Python路径: {sys.path[:3]}...")
-
-from logger_config import setup_logger
+from logs.logger import setup_logger
 logger = setup_logger('WebServer')
-
-try:
-    from app import app
-    print("✅ 成功导入Flask应用")
-except ImportError as import_error:
-    print(f"❌ 导入应用失败: {import_error}")
-    print("🔧 尝试创建基本Flask应用...")
-    
-    # 创建基本的Flask应用作为备用
-    from flask import Flask, jsonify
-    app = Flask(__name__)
-    
-    @app.route('/')
-    def fallback_home():
-        return jsonify({
-            "error": "应用导入失败",
-            "message": str(import_error),
-            "status": "fallback_mode"
-        })
-    
-    @app.route('/api/health')
-    def fallback_health():
-        return jsonify({
-            "error": "API模块导入失败", 
-            "message": str(import_error),
-            "status": "fallback_mode"
-        })
+from app import app
+print("✅ 成功导入Flask应用")
 
 
 def main():
