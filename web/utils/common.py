@@ -1,39 +1,13 @@
 import os
 import sys
-import time
 from functools import wraps
 from flask import jsonify
-
 # 添加父目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-
 import pyJianYingDraft as draft
+from config.settings import get_asset_path, get_output_path
+from logger_config import setup_logger
 
-try:
-    from config import get_asset_path, get_output_path
-except ImportError:
-    def get_asset_path(filename):
-        assets_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets')
-        return os.path.join(assets_dir, filename)
-    
-    def get_output_path(project_name):
-        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'output')
-        os.makedirs(output_dir, exist_ok=True)
-        return os.path.join(output_dir, f"{project_name}_{int(time.time())}")
-
-try:
-    from logger_config import setup_logger
-except ImportError:
-    import logging
-    def setup_logger(name):
-        logger = logging.getLogger(name)
-        logger.setLevel(logging.INFO)
-        if not logger.handlers:
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-        return logger
 
 # 设置日志记录器
 logger = setup_logger('API_Handler')

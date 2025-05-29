@@ -2,12 +2,11 @@ import os
 import json
 import uuid
 from flask import Blueprint, jsonify, request
-
-# 导入pyJianYingDraft模块
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import pyJianYingDraft as draft
 from pyJianYingDraft import Track_type, trange, tim
+from handlers.doc_handler import show_documentation 
 
 # 添加web目录到系统路径
 web_dir = os.path.dirname(__file__)
@@ -25,24 +24,6 @@ except ImportError:
         "version": "1.0.0"
     }
 
-try:
-    from handlers.doc_handler import show_documentation
-except ImportError:
-    # 备用文档处理函数
-    def show_documentation():
-        return jsonify({
-            "title": "pyJianYingDraft API 服务",
-            "description": "剪映草稿生成API服务",
-            "endpoints": {
-                "/api/health": "健康检查",
-                "/api/basic-project": "创建基础项目",
-                "/api/text-segment": "创建文本片段",
-                "/api/audio-segment": "创建音频片段",
-                "/api/video-segment": "创建视频片段",
-                "/api/comprehensive": "创建综合项目"
-            },
-            "status": "运行中"
-        })
 
 # 创建Blueprint
 api_bp = Blueprint('api', __name__)
