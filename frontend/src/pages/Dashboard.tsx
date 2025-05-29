@@ -1,6 +1,7 @@
-import React from 'react';
-import { Row, Col, Card, Statistic, Progress, List, Badge, Space, Typography, Button, Spin, Alert } from 'antd';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { Row, Col, Card, Statistic, Progress, List, Badge, Space, Typography, Button, Spin, Alert, Modal, message } from 'antd';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { 
   ApiOutlined, 
   ProjectOutlined, 
@@ -11,15 +12,66 @@ import {
 } from '@ant-design/icons';
 import { Activity, Server, Zap, Film } from 'lucide-react';
 import { apiService } from '@/services/api';
+import Editor from '@monaco-editor/react';
 
 const { Title, Text, Paragraph } = Typography;
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalContent, setModalContent] = useState<any>(null);
+  const [modalTitle, setModalTitle] = useState('');
+
   const { data: healthData, isLoading, error } = useQuery({
     queryKey: ['health-check'],
     queryFn: apiService.healthCheck,
     refetchInterval: 30000,
   });
+
+  // API测试mutation
+  const testMutation = useMutation({
+    mutationFn: async (apiType: string) => {
+      switch (apiType) {
+        case 'basic-project':
+          return apiService.createBasicProject();
+        case 'text-segment':
+          return apiService.createTextSegment({ text: '仪表盘测试文本', duration: '2s' });
+        case 'health':
+          return apiService.healthCheck();
+        case 'comprehensive':
+          return apiService.createComprehensive();
+        default:
+          throw new Error('未知的API类型');
+      }
+    },
+    onSuccess: (data, apiType) => {
+      setModalTitle(`${getApiTitle(apiType)} - 测试结果`);
+      setModalContent(data);
+      setModalVisible(true);
+      message.success(`${getApiTitle(apiType)}调用成功`);
+    },
+    onError: (error, apiType) => {
+      message.error(`${getApiTitle(apiType)}调用失败: ${error}`);
+    },
+  });
+
+  const getApiTitle = (apiType: string) => {
+    const titles: { [key: string]: string } = {
+      'basic-project': '创建基础项目',
+      'text-segment': '文本片段测试',
+      'health': 'API状态检查',
+      'comprehensive': '综合功能测试',
+    };
+    return titles[apiType] || apiType;
+  };
+
+  const handleQuickAction = (actionType: string) => {
+    if (actionType === 'api-test') {
+      navigate('/api-test');
+    } else {
+      testMutation.mutate(actionType);
+    }
+  };
 
   const recentActivities = [
     { title: '创建基础项目', time: '2分钟前', status: 'success' },
@@ -29,10 +81,10 @@ const Dashboard: React.FC = () => {
   ];
 
   const quickActions = [
-    { title: '创建基础项目', icon: <ProjectOutlined />, color: '#1890ff' },
-    { title: '文本片段测试', icon: <ThunderboltOutlined />, color: '#52c41a' },
-    { title: 'API 状态检查', icon: <ApiOutlined />, color: '#faad14' },
-    { title: '综合功能测试', icon: <RocketOutlined />, color: '#f5222d' },
+    { title: '创建基础项目', icon: <ProjectOutlined />, color: '#1890ff', action: 'basic-project' },
+    { title: '文本片段测试', icon: <ThunderboltOutlined />, color: '#52c41a', action: 'text-segment' },
+    { title: 'API 状态检查', icon: <ApiOutlined />, color: '#faad14', action: 'health' },
+    { title: '综合功能测试', icon: <RocketOutlined />, color: '#f5222d', action: 'comprehensive' },
   ];
 
   if (error) {
@@ -47,7 +99,7 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <Spin spinning={isLoading}>
+    <Spin spinning={isLoading || testMutation.isPending}>
       <div>
         <div style={{ marginBottom: '24px' }}>
           <Title level={2}>
@@ -118,14 +170,15 @@ const Dashboard: React.FC = () => {
         <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
           {/* 快速操作 */}
           <Col xs={24} lg={12}>
-            <Card title="🚀 快速操作" extra={<Button type="link">查看更多</Button>}>
+            <Card title="🚀 快速操作" extra={<Button type="link" onClick={() => navigate('/api-test')}>查看更多</Button>}>
               <Row gutter={[8, 8]}>
                 {quickActions.map((action, index) => (
                   <Col span={12} key={index}>
                     <Card 
                       size="small" 
                       hoverable
-                      style={{ textAlign: 'center', borderColor: action.color }}
+                      style={{ textAlign: 'center', borderColor: action.color, cursor: 'pointer' }}
+                      onClick={() => handleQuickAction(action.action)}
                     >
                       <Space direction="vertical" size={4}>
                         <div style={{ color: action.color, fontSize: '24px' }}>
@@ -144,7 +197,7 @@ const Dashboard: React.FC = () => {
           
           {/* 最近活动 */}
           <Col xs={24} lg={12}>
-            <Card title="📊 最近活动" extra={<Button type="link">查看全部</Button>}>
+            <Card title="📊 最近活动" extra={<Button type="link" onClick={() => navigate('/projects')}>查看全部</Button>}>
               <List
                 size="small"
                 dataSource={recentActivities}
@@ -185,7 +238,12 @@ const Dashboard: React.FC = () => {
                         <Text type="secondary" style={{ fontSize: '12px' }}>
                           {description}
                         </Text>
-                        <Button type="link" size="small" style={{ padding: 0 }}>
+                        <Button 
+                          type="link" 
+                          size="small" 
+                          style={{ padding: 0 }}
+                          onClick={() => navigate('/api-test')}
+                        >
                           测试接口 →
                         </Button>
                       </Space>
@@ -196,6 +254,41 @@ const Dashboard: React.FC = () => {
             </Card>
           </Col>
         </Row>
+
+        {/* 结果显示模态框 */}
+        <Modal
+          title={modalTitle}
+          open={modalVisible}
+          onCancel={() => setModalVisible(false)}
+          footer={[
+            <Button key="close" onClick={() => setModalVisible(false)}>
+              关闭
+            </Button>,
+            <Button key="copy" type="primary" onClick={() => {
+              navigator.clipboard.writeText(JSON.stringify(modalContent, null, 2));
+              message.success('已复制到剪贴板');
+            }}>
+              复制结果
+            </Button>,
+          ]}
+          width={800}
+        >
+          {modalContent && (
+            <div style={{ height: '400px' }}>
+              <Editor
+                height="100%"
+                defaultLanguage="json"
+                value={JSON.stringify(modalContent, null, 2)}
+                options={{
+                  readOnly: true,
+                  minimap: { enabled: false },
+                  fontSize: 12,
+                  theme: 'vs-light',
+                }}
+              />
+            </div>
+          )}
+        </Modal>
       </div>
     </Spin>
   );
