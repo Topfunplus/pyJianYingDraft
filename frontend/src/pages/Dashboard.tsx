@@ -162,6 +162,10 @@ const Dashboard: React.FC = () => {
                         textAlign: "center",
                         borderColor: action.color,
                         cursor: "pointer",
+                        minHeight: "80px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                       onClick={() => handleQuickAction(action.action)}>
                       <Space direction="vertical" size={4}>
@@ -176,6 +180,14 @@ const Dashboard: React.FC = () => {
                   </Col>
                 ))}
               </Row>
+              <Alert
+                message="提示"
+                description="点击上方按钮可快速测试各种API功能，结果将在弹窗中显示"
+                type="info"
+                showIcon
+                style={{ marginTop: 16 }}
+                size="small"
+              />
             </Card>
           </Col>
 

@@ -295,7 +295,37 @@ const CreateProject: React.FC = () => {
       }
 
       if (!projectResult.success) {
-        throw new Error(projectResult.message || '创建项目失败');
+        // 显示更友好的错误信息
+        let errorMessage = projectResult.message || '创建项目失败';
+        
+        if (projectResult.user_tips?.suggestions) {
+          errorMessage += '\n\n建议：\n' + projectResult.user_tips.suggestions.join('\n');
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // 显示警告信息（如果有）
+      if (projectResult.summary?.warnings?.length > 0) {
+        message.warning({
+          content: (
+            <div>
+              <div>项目创建成功，但有以下提示：</div>
+              {projectResult.summary.warnings.map((warning: string, index: number) => (
+                <div key={index} style={{ fontSize: '12px', marginTop: '4px' }}>
+                  {warning}
+                </div>
+              ))}
+            </div>
+          ),
+          duration: 6,
+          key: 'warnings'
+        });
+      }
+
+      // 显示用户提示
+      if (projectResult.user_tips?.suggestions) {
+        console.log('💡 用户提示:', projectResult.user_tips.suggestions);
       }
 
       setCurrentProjectData(projectResult.data);
