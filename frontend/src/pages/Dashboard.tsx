@@ -4,7 +4,6 @@ import {
   Col,
   Card,
   Statistic,
-  Progress,
   List,
   Badge,
   Space,
@@ -24,7 +23,7 @@ import {
   RocketOutlined,
   ThunderboltOutlined,
 } from "@ant-design/icons";
-import { Activity, Server, Film } from "lucide-react";
+import { Activity, Film } from "lucide-react";
 import { apiService } from "@/services/api";
 import Editor from "@monaco-editor/react";
 
@@ -141,38 +140,8 @@ const Dashboard: React.FC = () => {
           </Paragraph>
         </div>
 
+        {/* 快速操作和最近活动并排显示 */}
         <Row gutter={[16, 16]}>
-          {/* 系统状态卡片 - 删除API状态，保留其他卡片 */}
-          <Col xs={24} sm={12} lg={8}>
-            <Card>
-              <Statistic
-                title="系统版本"
-                value={healthData?.version || "1.0.0"}
-                prefix={<Activity size={16} />}
-                valueStyle={{ color: "#722ed1" }}
-              />
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} lg={8}>
-            <Card>
-              <div>
-                <Text strong>系统性能</Text>
-                <Progress
-                  percent={85}
-                  size="small"
-                  status="active"
-                  style={{ marginTop: 8 }}
-                />
-                <Text type="secondary" style={{ fontSize: "12px" }}>
-                  内存使用: 85%
-                </Text>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-
-        <Row gutter={[16, 16]} style={{ marginTop: "24px" }}>
           {/* 快速操作 */}
           <Col xs={24} lg={12}>
             <Card
@@ -181,7 +150,8 @@ const Dashboard: React.FC = () => {
                 <Button type="link" onClick={() => navigate("/create")}>
                   开始创作
                 </Button>
-              }>
+              }
+              style={{ height: "100%" }}>
               <Row gutter={[8, 8]}>
                 {quickActions.map((action, index) => (
                   <Col span={12} key={index}>
@@ -209,9 +179,9 @@ const Dashboard: React.FC = () => {
             </Card>
           </Col>
 
-          {/* 最近活动 - 移除了查看全部按钮，它指向项目管理页面 */}
+          {/* 最近活动 */}
           <Col xs={24} lg={12}>
-            <Card title="📊 最近活动">
+            <Card title="📊 最近活动" style={{ height: "100%" }}>
               <List
                 size="small"
                 dataSource={recentActivities}
@@ -242,8 +212,6 @@ const Dashboard: React.FC = () => {
             </Card>
           </Col>
         </Row>
-
-        {/* 删除API接口列表部分 */}
 
         {/* 结果显示模态框 */}
         <Modal

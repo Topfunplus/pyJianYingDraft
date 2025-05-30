@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { 
   Card, Form, Input, Button, Select, Space, Typography, Row, Col, 
-  Checkbox, InputNumber, ColorPicker, Tabs, Alert, Spin, Modal, message, List, Upload
+  Checkbox, InputNumber, ColorPicker, Tabs, Alert, Spin, Modal, message, 
+  List, Upload, Tag, Collapse
 } from 'antd';
 import { useMutation } from '@tanstack/react-query';
 import { 
   PlusOutlined, PlayCircleOutlined, FileTextOutlined, 
   AudioOutlined, VideoCameraOutlined, FontSizeOutlined,
   ThunderboltOutlined, BgColorsOutlined, UploadOutlined, DeleteOutlined,
-  DownloadOutlined  // 添加缺失的图标导入
+  DownloadOutlined
 } from '@ant-design/icons';
 import { Film, Sparkles } from 'lucide-react';
 import Editor from '@monaco-editor/react';
@@ -700,154 +701,176 @@ const CreateProject: React.FC = () => {
           </Card>
         </Col>
 
+        {/* 项目概览 - 右侧卡片布局优化 */}
         <Col xs={24} lg={8}>
-          <Card title="🎬 项目概览">
-            <Space direction="vertical" style={{ width: '100%' }}>
+          <Card title="🎬 项目概览" size="small">
+            <Space direction="vertical" style={{ width: '100%' }} size={8}>
+              {/* 已启用组件部分 - 改为更紧凑的网格布局 */}
               <div>
                 <Text strong>已启用组件:</Text>
-                <div style={{ marginTop: 8 }}>
+                <Row gutter={[8, 4]} style={{ marginTop: 4 }}>
                   {Object.entries(projectData).map(([key, section]) => (
-                    <div key={key} style={{ marginBottom: 4 }}>
+                    <Col span={12} key={key}>
                       <Checkbox 
                         checked={section.enabled} 
-                        disabled
-                        style={{ pointerEvents: 'none' }}
-                      />
-                      <Text style={{ marginLeft: 8, color: section.enabled ? '#1890ff' : '#999' }}>
-                        {sectionConfigs.find(s => s.key === key)?.title}
-                      </Text>
-                    </div>
+                        onChange={(e) => handleSectionToggle(key as keyof ProjectData, e.target.checked)}
+                        style={{ fontSize: '12px' }}
+                      >
+                        <Text style={{ 
+                          fontSize: '12px', 
+                          color: section.enabled ? '#1890ff' : '#999' 
+                        }}>
+                          {sectionConfigs.find(s => s.key === key)?.title}
+                        </Text>
+                      </Checkbox>
+                    </Col>
                   ))}
-                </div>
+                </Row>
               </div>
 
+              {/* 已上传素材 - 只有在有素材时显示 */}
               {uploadedAssets.length > 0 && (
-                <div>
+                <div style={{ marginTop: 0 }}>
                   <Text strong>已上传素材:</Text>
-                  <div style={{ marginTop: 8 }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: '4px',
+                    marginTop: 4
+                  }}>
                     {uploadedAssets.map((asset, index) => (
-                      <div key={index} style={{ 
-                        fontSize: '12px', 
-                        color: '#666',
-                        marginBottom: '4px'
-                      }}>
-                        {asset.type === 'audio' ? '🎵' : '🎬'} {asset.filename}
-                        <span style={{ opacity: 0.7, marginLeft: '4px' }}>
-                          ({asset.source === 'upload' ? '本地上传' : '网络下载'})
-                        </span>
-                      </div>
+                      <Tag 
+                        key={index}
+                        color={asset.type === 'audio' ? 'green' : 'blue'}
+                        style={{ margin: '0', fontSize: '11px' }}
+                      >
+                        {asset.type === 'audio' ? '🎵' : '🎬'} {asset.filename.length > 15 ? asset.filename.substring(0, 12) + '...' : asset.filename}
+                      </Tag>
                     ))}
                   </div>
                 </div>
               )}
 
+              {/* 集成说明 - 改为更紧凑的提示 */}
               <Alert
-                message="集成说明"
-                description="所有选中的组件将被集成到一个统一的剪映项目JSON文件中，按时间轴顺序排列。"
+                message="集成说明: 所有选中的组件将被集成到剪映项目中"
                 type="info"
                 showIcon
+                style={{ padding: '6px 10px', margin: '0' }}
               />
 
+              {/* 按钮组 - 主要按钮和下载按钮 */}
               <Button
                 type="primary"
-                size="large"
+                size="middle"
                 icon={<PlusOutlined />}
                 loading={generateMutation.isPending}
                 onClick={handleGenerate}
                 block
-                style={{ marginTop: 16 }}
+                style={{ marginTop: 8 }}
                 disabled={generateMutation.isPending}
               >
                 {generateMutation.isPending ? '生成中...' : '生成集成项目'}
               </Button>
 
-              {/* 添加独立的下载补丁包按钮 */}
               <Button
                 type="dashed"
-                size="large"
+                size="middle"
                 icon={<DownloadOutlined />}
                 loading={createLoading || downloadLoading}
                 onClick={handleDownloadPatch}
                 block
-                style={{ marginTop: 8 }}
+                style={{ marginTop: 4 }}
                 disabled={createLoading || downloadLoading}
               >
-                {(createLoading || downloadLoading) ? '处理中...' : '📦 直接下载补丁包'}
+                {(createLoading || downloadLoading) ? '处理中...' : '📦 下载补丁包'}
               </Button>
 
-              <Alert
-                message="下载说明"
-                description="可以直接下载补丁包，系统会根据当前配置自动生成项目。如果未配置组件，将使用默认模板。"
-                type="info"
-                showIcon
-                style={{ marginTop: 8 }}
-              />
-
-              <Alert
-                message="提示"
-                description="至少选择一个组件才能生成项目。未选择组件时将生成默认综合项目。"
-                type="info"
-                showIcon
-                style={{ marginTop: 16 }}
+              {/* 使用折叠面板替代多个提示 */}
+              <Collapse 
+                ghost 
+                bordered={false} 
+                size="small"
+                style={{ margin: '0', padding: '0' }}
+                items={[
+                  {
+                    key: '1',
+                    label: <Text style={{ fontSize: '12px', color: '#1890ff' }}>查看帮助信息</Text>,
+                    children: (
+                      <ul style={{ 
+                        margin: '0', 
+                        padding: '0 0 0 16px',
+                        fontSize: '12px', 
+                        color: '#666' 
+                      }}>
+                        <li>至少选择一个组件才能生成项目</li>
+                        <li>下载补丁包将包含所有必要素材</li>
+                        <li>系统会自动处理素材路径</li>
+                      </ul>
+                    )
+                  }
+                ]}
               />
             </Space>
           </Card>
 
-          <Card title="🚀 快速模板" style={{ marginTop: 16 }}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Button 
-                size="small" 
-                block 
-                onClick={() => {
-                  // 设置文本+动画模板
-                  setProjectData(prev => ({
-                    ...prev,
-                    text: { enabled: true, config: {} },
-                    animation: { enabled: true, config: {} }
-                  }));
-                  message.info('已应用文本动画模板');
-                }}
-              >
-                📝 文本动画模板
-              </Button>
-              <Button 
-                size="small" 
-                block
-                onClick={() => {
-                  // 设置全功能模板
-                  setProjectData(prev => {
-                    const newData = { ...prev };
-                    Object.keys(newData).forEach(key => {
-                      newData[key as keyof ProjectData].enabled = true;
+          {/* 快速模板 - 合并到主卡片中 */}
+          <div style={{ marginTop: 12 }}>
+            <Card title="🚀 快速模板" size="small" style={{ marginBottom: 0 }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: '8px',
+                flexWrap: 'wrap'
+              }}>
+                <Button 
+                  size="small"
+                  onClick={() => {
+                    setProjectData(prev => ({
+                      ...prev,
+                      text: { enabled: true, config: {} },
+                      animation: { enabled: true, config: {} }
+                    }));
+                    message.info('已应用文本动画模板');
+                  }}
+                >
+                  📝 文本动画模板
+                </Button>
+                <Button 
+                  size="small"
+                  onClick={() => {
+                    setProjectData(prev => {
+                      const newData = { ...prev };
+                      Object.keys(newData).forEach(key => {
+                        newData[key as keyof ProjectData].enabled = true;
+                      });
+                      return newData;
                     });
-                    return newData;
-                  });
-                  message.info('已应用全功能模板');
-                }}
-              >
-                🎊 全功能模板
-              </Button>
-              <Button 
-                size="small" 
-                block
-                onClick={() => {
-                  // 重置所有配置
-                  setProjectData({
-                    text: { enabled: true, config: {} },
-                    audio: { enabled: false, config: {} },
-                    video: { enabled: false, config: {} },
-                    animation: { enabled: false, config: {} },
-                    effects: { enabled: false, config: {} },
-                    transition: { enabled: false, config: {} },
-                  });
-                  form.resetFields();
-                  message.info('已重置所有配置');
-                }}
-              >
-                🔄 重置配置
-              </Button>
-            </Space>
-          </Card>
+                    message.info('已应用全功能模板');
+                  }}
+                >
+                  🎊 全功能模板
+                </Button>
+                <Button 
+                  size="small"
+                  danger
+                  onClick={() => {
+                    setProjectData({
+                      text: { enabled: true, config: {} },
+                      audio: { enabled: false, config: {} },
+                      video: { enabled: false, config: {} },
+                      animation: { enabled: false, config: {} },
+                      effects: { enabled: false, config: {} },
+                      transition: { enabled: false, config: {} },
+                    });
+                    form.resetFields();
+                    message.info('已重置所有配置');
+                  }}
+                >
+                  🔄 重置配置
+                </Button>
+              </div>
+            </Card>
+          </div>
         </Col>
       </Row>
 
