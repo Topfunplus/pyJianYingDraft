@@ -19,23 +19,10 @@ import requests
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 import sys
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 web_dir = os.path.dirname(__file__)
 sys.path.insert(0, web_dir)
 
-
-# 使用绝对导入
-try:
-    from template.template import default_template
-except ImportError:
-    # 备用默认模板
-    default_template = {
-        "canvas_config": {"height": 1080, "width": 1920},
-        "tracks": [],
-        "materials": {"videos": [], "audios": [], "texts": []},
-        "version": "1.0.0",
-    }
 
 # 创建Blueprint
 api_bp = Blueprint("api", __name__)
@@ -136,21 +123,21 @@ def api_comprehensive_create():
     try:
         data = get_request_data()
         print(f"📝 收到综合创作请求，数据: {data}")
-        
+
         result = DraftService.create_comprehensive_project(data)
         print(f"✅ 服务层处理完成: {result}")
-        
+
         # 确保返回的是有效的JSON响应
         if not isinstance(result, dict):
             result = {"success": True, "message": "项目创建成功", "data": result}
-        
+
         return jsonify(result)
     except Exception as e:
         print(f"❌ 综合创作API错误: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({
-            "success": False, 
+            "success": False,
             "message": f"项目创建失败: {str(e)}"
         }), 500
 
@@ -486,9 +473,9 @@ def api_download_patch_simple_route():
 def update_asset_paths_in_project(project_data, assets_dir):
     """更新项目数据中的素材路径为用户指定的assets目录"""
     import copy
-    
+
     updated_data = copy.deepcopy(project_data)
-    
+
     def update_paths_recursive(obj, path=""):
         if isinstance(obj, dict):
             for key, value in obj.items():
@@ -506,8 +493,9 @@ def update_asset_paths_in_project(project_data, assets_dir):
             for i, item in enumerate(obj):
                 if isinstance(item, (dict, list)):
                     update_paths_recursive(item, f"{path}[{i}]")
-    
+
     update_paths_recursive(updated_data)
     return updated_data
+
 
 print("✅ API路由注册完成 - 已移除API测试功能")
