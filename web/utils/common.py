@@ -73,24 +73,24 @@ def generate_unique_filename(file_type, url=None):
     return f"{file_type}_{timestamp}_{str(uuid.uuid4())[:8]}"
 
 def get_request_data():
-    """获取请求数据，统一处理JSON和表单数据"""
-    if request.is_json:
+    """获取请求数据"""
+    try:
         return request.get_json() or {}
-    return request.form.to_dict()
+    except Exception:
+        return {}
 
-def create_success_response(message, data=None, **kwargs):
+def create_success_response(message, **kwargs):
     """创建成功响应"""
     response = {
         "success": True,
         "message": message
     }
-    if data is not None:
-        response["data"] = data
     response.update(kwargs)
-    return jsonify(response)
+    return response
 
-def create_error_response(message, status_code=500):
+def create_error_response(message, status_code=400):
     """创建错误响应"""
+    from flask import jsonify
     return jsonify({
         "success": False,
         "message": message
@@ -145,51 +145,42 @@ def replace_paths_with_placeholders(data, assets):
         return data
 
 def set_absolute_paths_in_project(project_data, project_dir):
-    """将项目数据中的素材路径设置为绝对路径"""
-    try:
-        logger.info(f"🔄 设置绝对路径: {project_dir}")
-        
-        project_dir = os.path.normpath(project_dir)
-        assets_dir = os.path.join(project_dir, 'assets')
-        
-        result_data = copy.deepcopy(project_data)
-        
-        def process_paths(obj, parent_key=""):
-            if isinstance(obj, dict):
-                for key, value in obj.items():
-                    if isinstance(value, str):
-                        if any(ext in value.lower() for ext in ['.mp3', '.mp4', '.wav', '.avi', '.mov', '.m4a', '.aac']):
-                            filename = os.path.basename(value)
-                            
-                            if filename.startswith('default_'):
-                                new_path = os.path.join(assets_dir, filename)
-                            else:
-                                if filename.startswith('audio_') or filename.startswith('video_'):
-                                    new_path = os.path.join(assets_dir, filename)
-                                else:
-                                    if any(ext in filename.lower() for ext in ['.mp3', '.wav', '.m4a', '.aac']):
-                                        new_path = os.path.join(assets_dir, f"default_audio.mp3")
-                                    else:
-                                        new_path = os.path.join(assets_dir, f"default_video.mp4")
-                            
-                            new_path = os.path.normpath(new_path)
-                            obj[key] = new_path
-                            logger.info(f"✅ 路径更新: {parent_key}.{key} -> {new_path}")
-                    
-                    elif isinstance(value, (dict, list)):
-                        process_paths(value, f"{parent_key}.{key}")
-            
-            elif isinstance(obj, list):
-                for i, item in enumerate(obj):
-                    process_paths(item, f"{parent_key}[{i}]")
-        
-        process_paths(result_data)
-        logger.info("✅ 绝对路径设置完成")
-        return result_data
-        
-    except Exception as e:
-        logger.error(f"❌ 设置绝对路径失败: {e}")
-        return project_data
+    """设置项目数据中的绝对路径"""
+    import copy
+    
+    # 深拷贝避免修改原数据
+    updated_data = copy.deepcopy(project_data)
+    assets_dir = os.path.join(project_dir, "assets")
+    
+    def update_paths_recursive(obj, path=""):
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if key in ['source_file', 'video_path', 'audio_path', 'file_path', 'path']:
+                    if isinstance(value, str) and value:
+                        # 提取文件名
+                        filename = os.path.basename(value)
+                        # 检查文件名是否需要添加默认前缀
+                        if not filename.startswith('default_'):
+                            # 检查是否为系统默认文件
+                            base_name = filename.lower()
+                            if any(default in base_name for default in ['audio.mp3', 'video.mp4']):
+                                filename = f"default_{filename}"
+                        
+                        # 更新为目标assets目录路径，使用双反斜杠（Windows路径格式）
+                        new_path = os.path.join(assets_dir, filename).replace('\\', '\\\\')
+                        obj[key] = new_path
+                        print(f"✅ 路径配置: {key} -> {new_path}")
+                elif isinstance(value, (dict, list)):
+                    update_paths_recursive(value, f"{path}.{key}" if path else key)
+        elif isinstance(obj, list):
+            for i, item in enumerate(obj):
+                if isinstance(item, (dict, list)):
+                    update_paths_recursive(item, f"{path}[{i}]")
+    
+    update_paths_recursive(updated_data)
+    
+    print(f"✅ 项目路径配置完成，assets目录: {assets_dir}")
+    return updated_data
 
 def create_and_save_script(script, output_name, success_message, result_info):
     """创建并保存脚本的公共逻辑"""

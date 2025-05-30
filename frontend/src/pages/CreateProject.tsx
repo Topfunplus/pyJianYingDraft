@@ -258,21 +258,47 @@ const CreateProject: React.FC = () => {
 
       console.log('下载补丁包 - 使用配置:', config);
 
-      // 创建项目
+      // 创建项目 - 改进错误处理
       const projectResponse = await fetch('/api/comprehensive-create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
       });
 
+      // 检查响应状态
       if (!projectResponse.ok) {
-        const errorData = await projectResponse.json();
-        throw new Error(errorData.message || '创建项目失败');
+        let errorMessage = `HTTP ${projectResponse.status}: ${projectResponse.statusText}`;
+        try {
+          const errorData = await projectResponse.text();
+          const parsedError = JSON.parse(errorData);
+          errorMessage = parsedError.message || errorMessage;
+        } catch (parseError) {
+          console.warn('无法解析错误响应:', parseError);
+        }
+        throw new Error(errorMessage);
       }
 
-      const projectResult = await projectResponse.json();
-      setCurrentProjectData(projectResult.data);
+      // 尝试解析JSON响应
+      let projectResult;
+      try {
+        const responseText = await projectResponse.text();
+        console.log('API响应原始文本:', responseText);
+        
+        if (!responseText.trim()) {
+          throw new Error('服务器返回空响应');
+        }
+        
+        projectResult = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('JSON解析失败:', jsonError);
+        throw new Error('服务器响应格式错误，请检查后端服务');
+      }
 
+      if (!projectResult.success) {
+        throw new Error(projectResult.message || '创建项目失败');
+      }
+
+      setCurrentProjectData(projectResult.data);
       message.success({ content: '项目创建成功，请选择工程目录', key: 'create' });
       setCreateLoading(false);
       

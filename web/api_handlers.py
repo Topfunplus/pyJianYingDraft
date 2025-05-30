@@ -133,9 +133,26 @@ def api_video_segment():
 @api_error_handler
 def api_comprehensive_create():
     """综合创作项目"""
-    data = get_request_data()
-    result = DraftService.create_comprehensive_project(data)
-    return jsonify(result)
+    try:
+        data = get_request_data()
+        print(f"📝 收到综合创作请求，数据: {data}")
+        
+        result = DraftService.create_comprehensive_project(data)
+        print(f"✅ 服务层处理完成: {result}")
+        
+        # 确保返回的是有效的JSON响应
+        if not isinstance(result, dict):
+            result = {"success": True, "message": "项目创建成功", "data": result}
+        
+        return jsonify(result)
+    except Exception as e:
+        print(f"❌ 综合创作API错误: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False, 
+            "message": f"项目创建失败: {str(e)}"
+        }), 500
 
 
 @api_bp.route("/api/comprehensive", methods=["POST"])
@@ -286,6 +303,10 @@ def api_download_patch_simple():
                 }
             ), 400
 
+        # 更新项目数据中的素材路径为用户指定路径
+        updated_project_data = update_asset_paths_in_project(project_data, assets_dir)
+        print("✅ 已更新项目数据中的素材路径")
+
         # 创建临时目录和ZIP文件
         temp_dir = tempfile.mkdtemp()
         timestamp = int(time.time())
@@ -295,10 +316,10 @@ def api_download_patch_simple():
         user_uploads_dir = ensure_user_uploads_dir()
 
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-            # 添加模板JSON文件
-            json_content = json.dumps(project_data, indent=2, ensure_ascii=False)
+            # 添加更新后的模板JSON文件
+            json_content = json.dumps(updated_project_data, indent=2, ensure_ascii=False)
             zipf.writestr("draft_content.json", json_content)
-            print("✅ 添加 draft_content.json 到补丁包")
+            print("✅ 添加 draft_content.json 到补丁包（已更新路径）")
 
             # 收集所有素材文件
             collected_assets = []
@@ -370,6 +391,7 @@ def api_download_patch_simple():
 1. 补丁包已保存到指定目录: {project_dir}
 2. 解压后素材文件将位于正确位置
 3. 不要更改素材文件名和位置
+4. draft_content.json 中的素材路径已自动配置为正确路径
 
 ## 🕒 生成信息
 - 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
@@ -448,17 +470,44 @@ def api_download_patch_simple():
         return jsonify({"success": False, "message": f"生成补丁包失败: {str(e)}"}), 500
 
 
-# 注册新路由
-@api_bp.route("/api/select-project-dir", methods=["POST"])
+# 注册新路由 - 移除重复的路由注册
+@api_bp.route("/api/select-project-dir-route", methods=["POST"])
 def api_select_project_dir_route():
     """选择项目目录路由"""
     return api_select_project_dir()
 
 
-@api_bp.route("/api/download-patch-simple", methods=["POST"])
+@api_bp.route("/api/download-patch-simple-route", methods=["POST"])
 def api_download_patch_simple_route():
     """下载简化补丁包路由"""
     return api_download_patch_simple()
 
+
+def update_asset_paths_in_project(project_data, assets_dir):
+    """更新项目数据中的素材路径为用户指定的assets目录"""
+    import copy
+    
+    updated_data = copy.deepcopy(project_data)
+    
+    def update_paths_recursive(obj, path=""):
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if key in ['source_file', 'video_path', 'audio_path', 'file_path', 'path']:
+                    if isinstance(value, str) and value:
+                        # 提取文件名
+                        filename = os.path.basename(value)
+                        # 更新为目标assets目录路径
+                        new_path = os.path.join(assets_dir, filename).replace('\\', '\\\\')
+                        obj[key] = new_path
+                        print(f"✅ 更新路径: {path}.{key} -> {new_path}")
+                elif isinstance(value, (dict, list)):
+                    update_paths_recursive(value, f"{path}.{key}" if path else key)
+        elif isinstance(obj, list):
+            for i, item in enumerate(obj):
+                if isinstance(item, (dict, list)):
+                    update_paths_recursive(item, f"{path}[{i}]")
+    
+    update_paths_recursive(updated_data)
+    return updated_data
 
 print("✅ API路由注册完成 - 已移除API测试功能")
