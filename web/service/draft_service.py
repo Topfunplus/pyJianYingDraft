@@ -154,27 +154,14 @@ class DraftService:
             print(f"🏗️ 开始创建综合项目，配置: {config}")
 
             # 检查素材文件可用性
-            tutorial_asset_dir = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                "readme_assets", "tutorial"
-            )
             user_uploads_dir = ensure_user_uploads_dir()
 
-            # 检查可用的素材文件
+            # 检查可用的素材文件 - 只检查用户上传的文件
             available_assets = {
                 'audio': [],
                 'video': [],
                 'user_files': []
             }
-
-            # 检查系统默认素材
-            for asset_file in ["audio.mp3", "video.mp4"]:
-                asset_path = os.path.join(tutorial_asset_dir, asset_file)
-                if os.path.exists(asset_path):
-                    if 'audio' in asset_file:
-                        available_assets['audio'].append(f"默认音频: {asset_file}")
-                    else:
-                        available_assets['video'].append(f"默认视频: {asset_file}")
 
             # 检查用户上传的文件
             if os.path.exists(user_uploads_dir):
@@ -302,24 +289,16 @@ class DraftService:
                     audio_duration = audio_config.get('duration', '5s')
                     audio_volume = audio_config.get('volume', 0.6)
 
-                    # 实际创建音频片段和素材
+                    # 实际创建音频片段和素材 - 只使用用户上传的文件
                     audio_file_path = None
                     audio_filename = None
 
-                    # 检查用户上传的音频文件
-                    if available_assets['user_files']:
-                        for filename in available_assets['user_files']:
-                            if filename.lower().endswith(('.mp3', '.wav', '.m4a')):
-                                audio_file_path = os.path.join(user_uploads_dir, filename)
-                                audio_filename = filename
-                                break
-
-                    # 如果没有用户文件，使用默认音频
-                    if not audio_file_path:
-                        default_audio_path = os.path.join(tutorial_asset_dir, "audio.mp3")
-                        if os.path.exists(default_audio_path):
-                            audio_file_path = default_audio_path
-                            audio_filename = "audio.mp3"
+                    # 只检查用户上传的音频文件
+                    for filename in available_assets['user_files']:
+                        if filename.lower().endswith(('.mp3', '.wav', '.m4a')):
+                            audio_file_path = os.path.join(user_uploads_dir, filename)
+                            audio_filename = filename
+                            break
 
                     if audio_file_path and os.path.exists(audio_file_path):
                         try:
@@ -349,7 +328,7 @@ class DraftService:
                                 'volume': audio_volume,
                                 'start_time': '0s',
                                 'status': '✅ 创建成功',
-                                'note': f'使用素材: {audio_filename}'
+                                'note': f'使用用户上传素材: {audio_filename}'
                             })
 
                             print(f"✅ 成功创建音频片段: {audio_filename}, 时长: {audio_duration}")
@@ -363,14 +342,14 @@ class DraftService:
                                 'note': f'错误: {str(e)}'
                             })
                     else:
-                        warnings.append('🔊 音频组件: 未找到有效的音频文件')
+                        warnings.append('🔊 音频组件: 未找到用户上传的音频文件')
                         segments_info.append({
                             'type': '音频',
-                            'status': '⚠️ 跳过 - 音频文件不存在',
-                            'note': '请检查音频文件是否正确上传'
+                            'status': '⚠️ 跳过 - 无可用音频文件',
+                            'note': '请上传音频文件或使用网络下载功能添加音频素材'
                         })
                 else:
-                    warnings.append('🔊 音频组件: 未找到音频素材文件，已跳过音频片段创建')
+                    warnings.append('🔊 音频组件: 未找到用户上传的音频素材文件，已跳过音频片段创建')
                     segments_info.append({
                         'type': '音频',
                         'status': '⚠️ 跳过 - 缺少音频素材',
@@ -387,25 +366,16 @@ class DraftService:
                     video_config = config['video'].get('config', {})
                     video_duration = video_config.get('duration', '4.2s')
 
-                    # 实际创建视频片段和素材
-                    # 优先使用用户上传的视频文件，如果没有则使用默认视频
+                    # 实际创建视频片段和素材 - 只使用用户上传的文件
                     video_file_path = None
                     video_filename = None
 
-                    # 检查用户上传的视频文件
-                    if available_assets['user_files']:
-                        for filename in available_assets['user_files']:
-                            if filename.lower().endswith(('.mp4', '.avi', '.mov')):
-                                video_file_path = os.path.join(user_uploads_dir, filename)
-                                video_filename = filename
-                                break
-
-                    # 如果没有用户文件，使用默认视频
-                    if not video_file_path:
-                        default_video_path = os.path.join(tutorial_asset_dir, "video.mp4")
-                        if os.path.exists(default_video_path):
-                            video_file_path = default_video_path
-                            video_filename = "video.mp4"
+                    # 只检查用户上传的视频文件
+                    for filename in available_assets['user_files']:
+                        if filename.lower().endswith(('.mp4', '.avi', '.mov')):
+                            video_file_path = os.path.join(user_uploads_dir, filename)
+                            video_filename = filename
+                            break
 
                     if video_file_path and os.path.exists(video_file_path):
                         try:
@@ -429,7 +399,7 @@ class DraftService:
                                 'duration': video_duration,
                                 'start_time': '0s',
                                 'status': '✅ 创建成功',
-                                'note': f'使用素材: {video_filename}'
+                                'note': f'使用用户上传素材: {video_filename}'
                             })
 
                             print(f"✅ 成功创建视频片段: {video_filename}, 时长: {video_duration}")
@@ -443,14 +413,14 @@ class DraftService:
                                 'note': f'错误: {str(e)}'
                             })
                     else:
-                        warnings.append('🎬 视频组件: 未找到有效的视频文件')
+                        warnings.append('🎬 视频组件: 未找到用户上传的视频文件')
                         segments_info.append({
                             'type': '视频',
-                            'status': '⚠️ 跳过 - 视频文件不存在',
-                            'note': '请检查视频文件是否正确上传'
+                            'status': '⚠️ 跳过 - 无可用视频文件',
+                            'note': '请上传视频文件或使用网络下载功能添加视频素材'
                         })
                 else:
-                    warnings.append('🎬 视频组件: 未找到视频素材文件，已跳过视频片段创建')
+                    warnings.append('🎬 视频组件: 未找到用户上传的视频素材文件，已跳过视频片段创建')
                     segments_info.append({
                         'type': '视频',
                         'status': '⚠️ 跳过 - 缺少视频素材',
@@ -471,11 +441,11 @@ class DraftService:
                         'note': '转场效果将在视频片段间自动应用'
                     })
                 else:
-                    warnings.append('🔄 转场组件: 转场效果需要视频素材支持，已跳过')
+                    warnings.append('🔄 转场组件: 转场效果需要用户上传的视频素材支持，已跳过')
                     segments_info.append({
                         'type': '转场',
                         'status': '⚠️ 跳过 - 需要视频素材',
-                        'note': '转场效果需要至少2个视频片段才能生效'
+                        'note': '转场效果需要至少2个视频片段才能生效，请先上传视频素材'
                     })
             
             # 导出项目数据
@@ -511,19 +481,19 @@ class DraftService:
                 "user_tips": {
                     "missing_assets": warnings,
                     "suggestions": [
-                        "💡 如需音频效果，请上传音频文件 (.mp3, .wav, .m4a)",
-                        "💡 如需视频效果，请上传视频文件 (.mp4, .avi, .mov)",
-                        "💡 也可使用'网络下载'功能从网址下载音视频素材",
+                        "💡 音频组件需要用户上传音频文件 (.mp3, .wav, .m4a)",
+                        "💡 视频组件需要用户上传视频文件 (.mp4, .avi, .mov)",
+                        "💡 可使用'网络下载'功能从网址下载音视频素材",
                         "💡 文本组件无需额外素材，可直接使用",
-                        "💡 不同类型的文本使用独立轨道，可同时显示"
+                        "💡 系统仅使用用户提供的素材，不依赖本机文件"
                     ] if warnings else [
                         "✅ 所有组件都已成功创建",
                         "📦 项目已准备完毕，可以下载补丁包",
-                        "🎬 多个文本轨道将同时显示不同效果"
+                        "🎬 所有素材均来自用户上传或网络下载"
                     ]
                 }
             }
-            
+
             print(f"✅ 综合项目创建成功，包含 {len(enabled_features)} 个组件，总时长: {total_duration}")
             print(f"📊 轨道结构: 文本轨道 {text_tracks_count} 个")
             if warnings:
@@ -539,12 +509,12 @@ class DraftService:
                 "message": f"创建综合项目失败: {str(e)}",
                 "user_tips": {
                     "suggestions": [
-                        "🔧 请检查是否有足够的素材文件",
+                        "🔧 请确保已上传所需的音视频文件",
                         "📁 确保音频文件格式为 .mp3, .wav, .m4a",
                         "📁 确保视频文件格式为 .mp4, .avi, .mov",
                         "🌐 可使用网络下载功能获取素材",
                         "💬 如问题持续，请检查控制台错误信息",
-                        "🎯 错误原因可能是片段时间冲突，已优化轨道分配"
+                        "🎯 系统仅使用用户提供的素材文件"
                     ]
                 }
             }
