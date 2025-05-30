@@ -70,14 +70,14 @@ const PathSelectModal: React.FC<PathSelectModalProps> = ({
           loading={loading}
           icon={<DownloadOutlined />}
         >
-          确定下载
+          确定保存到此目录
         </Button>,
       ]}
     >
       <div style={{ marginBottom: 16 }}>
         <Card size="small" style={{ backgroundColor: '#f6ffed', border: '1px solid #b7eb8f' }}>
           <Text type="secondary">
-            📁 请选择您希望存放剪映素材的目录路径。所有音视频素材将保存在此目录的 assets 子文件夹中。
+            📁 请选择您希望保存剪映项目的目录路径。系统将直接在此目录创建项目文件和素材文件夹。
           </Text>
         </Card>
       </div>
@@ -122,13 +122,13 @@ const PathSelectModal: React.FC<PathSelectModalProps> = ({
       <div style={{ marginTop: 16 }}>
         <Card size="small" style={{ backgroundColor: '#fff7e6', border: '1px solid #ffd591' }}>
           <Title level={5} style={{ margin: 0, marginBottom: 8 }}>
-            📋 使用说明
+            📋 保存说明
           </Title>
           <div style={{ fontSize: '12px', color: '#666' }}>
-            <div>1. 系统将自动配置所有素材的绝对路径</div>
-            <div>2. 下载后将素材文件放到 {projectDir}/assets/ 目录</div>
-            <div>3. 将 draft_content.json 导入剪映即可使用</div>
-            <div>4. 确保剪映有权限访问该目录</div>
+            <div>1. 系统将直接在指定目录创建项目文件</div>
+            <div>2. 素材文件将保存到 {projectDir}/assets/ 目录</div>
+            <div>3. draft_content.json 可直接导入剪映使用</div>
+            <div>4. 同时生成ZIP备份文件便于分享</div>
           </div>
         </Card>
       </div>

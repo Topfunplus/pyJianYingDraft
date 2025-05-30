@@ -313,9 +313,9 @@ const CreateProject: React.FC = () => {
 
       const configResult = await configResponse.json();
       
-      message.loading({ content: '正在生成补丁包...', key: 'download' });
+      message.loading({ content: '正在生成并保存补丁包...', key: 'download' });
 
-      // 第二步：下载补丁包
+      // 第二步：生成并保存补丁包到指定目录
       const downloadResponse = await fetch('/api/download-patch-simple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -327,32 +327,75 @@ const CreateProject: React.FC = () => {
 
       if (!downloadResponse.ok) {
         const errorResult = await downloadResponse.json();
-        throw new Error(errorResult.message || '下载失败');
+        throw new Error(errorResult.message || '保存失败');
       }
 
-      // 下载文件
-      const blob = await downloadResponse.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `jianying_project_${Date.now()}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
+      // 获取保存结果
+      const result = await downloadResponse.json();
+      
       message.success({ 
-        content: `补丁包下载成功！工程目录: ${projectDir}`, 
+        content: '补丁包已成功保存到指定目录！', 
         key: 'download',
-        duration: 5
+        duration: 8
       });
 
-      setPathModalVisible(false);
-      setDownloadLoading(false);
+      // 显示详细的保存信息
+      Modal.success({
+        title: '🎉 补丁包保存成功',
+        width: 600,
+        content: (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>保存位置:</Text>
+              <div style={{ 
+                background: '#f6ffed', 
+                padding: '8px', 
+                borderRadius: '4px', 
+                marginTop: '4px',
+                fontSize: '12px',
+                fontFamily: 'monospace'
+              }}>
+                {result.details?.full_path}
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>包含内容:</Text>
+              <ul style={{ marginTop: '4px', fontSize: '14px' }}>
+                <li>📄 draft_content.json - 剪映项目文件</li>
+                <li>📁 assets/ - 素材文件目录 ({result.details?.assets_count} 个文件)</li>
+                <li>📋 README.md - 使用说明</li>
+                <li>📦 {result.details?.zip_file} - 完整补丁包</li>
+              </ul>
+            </div>
 
-    } catch (error) {
-      console.error('下载失败:', error);
-      message.error({ content: `下载失败: ${error.message}`, key: 'download' });
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>下一步操作:</Text>
+              <ol style={{ marginTop: '4px', fontSize: '14px' }}>
+                <li>素材文件已自动放置在正确位置</li>
+                <li>将 draft_content.json 复制到剪映草稿目录</li>
+                <li>在剪映中打开项目即可使用</li>
+              </ol>
+            </div>
+
+            <Alert
+              message="提示"
+              description={`所有文件已准备完毕，项目可以在剪映中直接使用。ZIP文件可用于备份或分享。`}
+              type="success"
+              showIcon
+              style={{ marginTop: 12 }}
+            />
+          </div>
+        ),
+        onOk: () => {
+          setPathModalVisible(false);
+          setDownloadLoading(false);
+        }
+      });
+
+    } catch (error: any) {
+      console.error('保存失败:', error);
+      message.error({ content: `保存失败: ${error.message}`, key: 'download' });
       setDownloadLoading(false);
     }
   };

@@ -1290,7 +1290,7 @@ def api_select_project_dir():
 # 简化下载补丁包API
 @api_bp.route('/api/download-patch-simple', methods=['POST'])
 def api_download_patch_simple():
-    """下载补丁包（简化版，已配置好路径）"""
+    """下载补丁包（简化版，直接保存到用户指定路径）"""
     try:
         print("🔄 收到简化补丁包下载请求")
         
@@ -1314,10 +1314,25 @@ def api_download_patch_simple():
         
         import zipfile
         import tempfile
+        import shutil
         
-        # 创建临时目录
+        # 确保目标目录存在
+        try:
+            os.makedirs(project_dir, exist_ok=True)
+            assets_dir = os.path.join(project_dir, 'assets')
+            os.makedirs(assets_dir, exist_ok=True)
+            print(f"✅ 目标目录创建成功: {project_dir}")
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": f"无法创建目标目录 {project_dir}: {str(e)}"
+            }), 400
+        
+        # 创建临时目录和ZIP文件
         temp_dir = tempfile.mkdtemp()
-        zip_path = os.path.join(temp_dir, f"jianying_project_{int(time.time())}.zip")
+        timestamp = int(time.time())
+        zip_filename = f"jianying_project_{timestamp}.zip"
+        zip_path = os.path.join(temp_dir, zip_filename)
         
         user_uploads_dir = ensure_user_uploads_dir()
         
@@ -1367,40 +1382,92 @@ def api_download_patch_simple():
             readme_content = f"""# 剪映项目补丁包
 
 ## 🎯 使用方法
-1. 解压补丁包到任意目录
-2. **创建素材目录**: {project_dir}\\assets\\
-3. **复制素材文件**: 将 assets 文件夹中的所有文件复制到上述目录
+1. **已自动配置路径**: 补丁包已保存到指定目录
+2. **解压补丁包**: 解压 {zip_filename} 文件
+3. **素材文件**: 素材文件会自动解压到 assets 目录
 4. **导入项目**: 将 draft_content.json 复制到剪映草稿目录
 5. **打开剪映**: 在剪映中打开项目即可
 
 ## 📂 路径配置
 - **工程目录**: {project_dir}
-- **素材目录**: {project_dir}\\assets\\
+- **素材目录**: {assets_dir}
 - **路径类型**: 绝对路径（已配置完成）
 
 ## 📋 包含文件
 {assets_info}
 
 ## ⚠️ 重要提示
-1. 必须将素材文件放在指定位置: {project_dir}\\assets\\
-2. 不要更改素材文件名
-3. 确保剪映有权限访问该目录
+1. 补丁包已保存到指定目录: {project_dir}
+2. 解压后素材文件将位于正确位置
+3. 不要更改素材文件名和位置
 
 ## 🕒 生成信息
 - 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 - 素材数量: {len(collected_assets)} 个文件
 - 项目分辨率: 1920x1080
+- 保存位置: {project_dir}\\{zip_filename}
 """
             zipf.writestr("README.md", readme_content)
         
-        print(f"✅ 补丁包生成成功，工程目录: {project_dir}")
+        # 将ZIP文件复制到用户指定目录
+        target_zip_path = os.path.join(project_dir, zip_filename)
+        try:
+            shutil.copy2(zip_path, target_zip_path)
+            print(f"✅ 补丁包已保存到: {target_zip_path}")
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": f"无法保存到指定目录: {str(e)}"
+            }), 500
         
-        return send_file(
-            zip_path,
-            as_attachment=True,
-            download_name=f"jianying_project_{int(time.time())}.zip",
-            mimetype='application/zip'
-        )
+        # 解压素材文件到assets目录
+        try:
+            with zipfile.ZipFile(target_zip_path, 'r') as zipf:
+                # 只解压assets目录中的文件
+                for file_info in zipf.filelist:
+                    if file_info.filename.startswith('assets/'):
+                        zipf.extract(file_info, project_dir)
+                        print(f"✅ 解压素材文件: {file_info.filename}")
+                
+                # 解压draft_content.json到项目根目录
+                if 'draft_content.json' in zipf.namelist():
+                    zipf.extract('draft_content.json', project_dir)
+                    print("✅ 解压 draft_content.json")
+                
+                # 解压README.md
+                if 'README.md' in zipf.namelist():
+                    zipf.extract('README.md', project_dir)
+                    print("✅ 解压 README.md")
+            
+        except Exception as e:
+            print(f"⚠️ 解压文件时出现警告: {str(e)}")
+        
+        # 清理临时文件
+        try:
+            os.remove(zip_path)
+            os.rmdir(temp_dir)
+        except:
+            pass
+        
+        print(f"✅ 补丁包生成并保存成功: {target_zip_path}")
+        
+        return jsonify({
+            "success": True,
+            "message": f"补丁包已成功保存到指定目录",
+            "details": {
+                "project_dir": project_dir,
+                "zip_file": zip_filename,
+                "full_path": target_zip_path,
+                "assets_count": len(collected_assets),
+                "assets_dir": assets_dir,
+                "instructions": [
+                    f"补丁包已保存到: {target_zip_path}",
+                    f"素材文件已解压到: {assets_dir}",
+                    f"项目文件已准备完毕，可直接在剪映中使用",
+                    "如需重新部署，可使用ZIP文件进行备份"
+                ]
+            }
+        })
         
     except Exception as e:
         print(f"❌ 生成补丁包失败: {str(e)}")
