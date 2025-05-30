@@ -80,6 +80,12 @@ def show_documentation():
             <p><strong>参数:</strong> 无</p>
         </div>
         
+        <div class="endpoint">
+            <h3><span class="method post">POST</span> /api/comprehensive-create</h3>
+            <p><strong>功能:</strong> 综合创作项目，支持多组件配置集成</p>
+            <p><strong>参数:</strong> 组件配置对象，支持文本、音频、视频、动画、特效等</p>
+        </div>
+        
         <p style="margin-top: 30px; text-align: center;">
             <a href="/api/health" style="color: #007bff;">📋 获取完整接口信息</a>
         </p>
@@ -137,7 +143,8 @@ def health_check():
             "/api/transition": "创建转场效果",
             "/api/background-filling": "创建背景填充",
             "/api/text-effects": "创建文本特效",
-            "/api/comprehensive": "创建综合项目"
+            "/api/comprehensive": "创建综合项目",
+            "/api/comprehensive-create": "综合创作项目（集成版）"
         },
         "version": "1.0.0",
         "status": "running"

@@ -33,6 +33,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       label: '仪表盘',
     },
     {
+      key: '/create',
+      icon: <ProjectOutlined />,
+      label: '开始创作',
+    },
+    {
       key: '/api-test',
       icon: <ApiOutlined />,
       label: 'API 测试',

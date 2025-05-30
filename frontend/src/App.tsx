@@ -7,6 +7,7 @@ import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
 import ApiTest from "@/pages/ApiTest";
 import ProjectManager from "@/pages/ProjectManager";
+import CreateProject from "@/pages/CreateProject";
 import "./App.css";
 
 const queryClient = new QueryClient({
@@ -43,6 +44,7 @@ const App: React.FC = () => {
             <Layout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/create" element={<CreateProject />} />
                 <Route path="/api-test" element={<ApiTest />} />
                 <Route path="/projects" element={<ProjectManager />} />
               </Routes>

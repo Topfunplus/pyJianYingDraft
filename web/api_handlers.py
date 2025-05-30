@@ -414,6 +414,207 @@ def handle_text_effects():
             "message": f"创建文本特效失败: {str(e)}"
         }), 500
 
+def handle_comprehensive_create():
+    """处理综合创作API - 集成所有组件到一个项目中"""
+    try:
+        print("🚀 收到综合创作请求")
+        data = request.get_json() or {}
+        print(f"📝 请求数据: {data}")
+        
+        # 创建剪映草稿
+        script = draft.Script_file(1920, 1080)
+        
+        # 添加所有类型的轨道
+        script.add_track(Track_type.text).add_track(Track_type.video).add_track(Track_type.audio)
+        
+        segments_info = []
+        current_time = 0  # 用于管理时间轴
+        
+        # 处理文本组件
+        if data.get('text', {}).get('enabled', False):
+            text_config = data['text'].get('config', {})
+            duration = text_config.get('duration', '3s')
+            
+            text_segment = draft.Text_segment(
+                text_config.get('text', '综合创作文本'),
+                trange(f"{current_time}s", duration),
+                style=draft.Text_style(color=tuple(text_config.get('color', [1.0, 1.0, 1.0]))),
+                clip_settings=draft.Clip_settings(transform_y=-0.8)
+            )
+            
+            # 设置字体
+            font = text_config.get('font', '文轩体')
+            if hasattr(draft.Font_type, font):
+                text_segment.font = getattr(draft.Font_type, font)
+            
+            script.add_segment(text_segment)
+            segments_info.append({
+                "type": "text",
+                "content": text_config.get('text', '综合创作文本'),
+                "duration": duration,
+                "start_time": f"{current_time}s"
+            })
+            current_time += float(duration.replace('s', ''))
+        
+        # 处理音频组件
+        if data.get('audio', {}).get('enabled', False):
+            audio_config = data['audio'].get('config', {})
+            duration = audio_config.get('duration', '5s')
+            
+            # 注意：这里只创建轨道结构，实际使用时需要音频文件
+            segments_info.append({
+                "type": "audio",
+                "duration": duration,
+                "volume": audio_config.get('volume', 0.6),
+                "fade_in": audio_config.get('fade_in', '1s'),
+                "note": "需要实际音频文件"
+            })
+        
+        # 处理视频组件
+        if data.get('video', {}).get('enabled', False):
+            video_config = data['video'].get('config', {})
+            duration = video_config.get('duration', '4.2s')
+            
+            # 注意：这里只创建轨道结构，实际使用时需要视频文件
+            segments_info.append({
+                "type": "video",
+                "duration": duration,
+                "note": "需要实际视频文件"
+            })
+        
+        # 处理动画组件
+        if data.get('animation', {}).get('enabled', False):
+            animation_config = data['animation'].get('config', {})
+            duration = animation_config.get('duration', '2s')
+            
+            animation_segment = draft.Text_segment(
+                animation_config.get('text', '动画文本'),
+                trange(f"{current_time}s", duration),
+                style=draft.Text_style(color=(0.0, 1.0, 1.0)),
+                clip_settings=draft.Clip_settings(transform_y=0.8)  # 上方位置，避免重叠
+            )
+            
+            # 添加动画效果
+            try:
+                animation_type = animation_config.get('animation_type', '故障闪动')
+                if hasattr(draft.Text_outro, animation_type):
+                    animation = getattr(draft.Text_outro, animation_type)
+                    animation_segment.add_animation(animation, duration=tim("1s"))
+                elif hasattr(draft.Text_intro, animation_type):
+                    animation = getattr(draft.Text_intro, animation_type)
+                    animation_segment.add_animation(animation, duration=tim("0.5s"))
+            except Exception as e:
+                print(f"动画添加失败: {e}")
+            
+            script.add_segment(animation_segment)
+            segments_info.append({
+                "type": "text_animation", 
+                "content": animation_config.get('text', '动画文本'),
+                "animation_type": animation_config.get('animation_type', '故障闪动'),
+                "duration": duration,
+                "start_time": f"{current_time}s"
+            })
+            current_time += float(duration.replace('s', ''))
+        
+        # 处理特效组件
+        if data.get('effects', {}).get('enabled', False):
+            effects_config = data['effects'].get('config', {})
+            duration = effects_config.get('duration', '3s')
+            
+            effects_segment = draft.Text_segment(
+                effects_config.get('text', '特效文本'),
+                trange(f"{current_time}s", duration),
+                style=draft.Text_style(color=(1.0, 0.5, 0.0)),
+                clip_settings=draft.Clip_settings(transform_y=0.0)  # 中间位置
+            )
+            
+            # 添加特效
+            try:
+                effect_type = effects_config.get('effect_type', 'bubble')
+                if effect_type == 'bubble':
+                    effects_segment.add_bubble("361595", "6742029398926430728")
+                elif effect_type == 'flower':
+                    effects_segment.add_effect("7296357486490144036")
+            except Exception as e:
+                print(f"特效添加失败: {e}")
+            
+            script.add_segment(effects_segment)
+            segments_info.append({
+                "type": "text_effects",
+                "content": effects_config.get('text', '特效文本'),
+                "effect_type": effects_config.get('effect_type', 'bubble'),
+                "duration": duration,
+                "start_time": f"{current_time}s"
+            })
+            current_time += float(duration.replace('s', ''))
+        
+        # 处理转场组件
+        if data.get('transition', {}).get('enabled', False):
+            transition_config = data['transition'].get('config', {})
+            segments_info.append({
+                "type": "transition",
+                "transition_type": transition_config.get('transition_type', '信号故障'),
+                "segment1_duration": transition_config.get('segment1_duration', '2s'),
+                "segment2_duration": transition_config.get('segment2_duration', '2s'),
+                "note": "转场效果需要两个视频片段"
+            })
+        
+        # 如果没有任何组件，创建默认内容
+        if not segments_info:
+            default_segment = draft.Text_segment(
+                "默认综合项目 - 请配置组件",
+                trange("0s", "3s"),
+                style=draft.Text_style(color=(1.0, 1.0, 0.0)),
+                clip_settings=draft.Clip_settings(transform_y=-0.8)
+            )
+            script.add_segment(default_segment)
+            segments_info.append({
+                "type": "default_text",
+                "content": "默认综合项目 - 请配置组件",
+                "duration": "3s",
+                "start_time": "0s"
+            })
+        
+        # 导出为统一的JSON格式
+        draft_json = script.dumps()
+        unified_data = json.loads(draft_json)
+        
+        # 添加项目元信息
+        unified_data['project_meta'] = {
+            "created_by": "pyJianYingDraft综合创作",
+            "creation_time": current_time,
+            "total_duration": f"{current_time}s",
+            "components_count": len(segments_info),
+            "enabled_features": [key for key, value in data.items() if value.get('enabled', False)],
+            "segments_summary": segments_info
+        }
+        
+        print(f"✅ 综合项目创建成功，包含 {len(segments_info)} 个组件")
+        
+        response_data = {
+            "success": True,
+            "message": "综合项目创建成功",
+            "data": unified_data,
+            "summary": {
+                "total_duration": f"{current_time}s",
+                "components_count": len(segments_info),
+                "enabled_features": [key for key, value in data.items() if value.get('enabled', False)],
+                "segments": segments_info
+            }
+        }
+        
+        print(f"📤 返回响应数据结构: success={response_data['success']}, components={len(segments_info)}")
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"❌ 综合创作失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "message": f"创建综合项目失败: {str(e)}"
+        }), 500
+
 # 注册路由
 @api_bp.route('/', methods=['GET'])
 def root_documentation():
@@ -475,5 +676,10 @@ def api_background_filling():
 def api_text_effects():
     """文本特效处理"""
     return handle_text_effects()
+
+@api_bp.route('/api/comprehensive-create', methods=['POST'])
+def api_comprehensive_create():
+    """综合创作项目"""
+    return handle_comprehensive_create()
 
 print("✅ API路由注册完成 - 使用pyJianYingDraft动态生成")

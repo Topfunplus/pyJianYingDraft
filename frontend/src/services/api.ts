@@ -68,49 +68,53 @@ export interface ProjectConfig {
 }
 
 export const apiService = {
-    // 健康检查
-    healthCheck: (): Promise<HealthCheckResponse> =>
-        api.get('/health').then(res => res.data),
+  // 健康检查
+  healthCheck: (): Promise<HealthCheckResponse> =>
+    api.get('/health').then(res => res.data),
 
-    // 基础项目
-    createBasicProject: (): Promise<ApiResponse> =>
-        api.post('/basic-project').then(res => res.data),
+  // 基础项目
+  createBasicProject: (): Promise<ApiResponse> =>
+    api.post('/basic-project').then(res => res.data),
 
-    // 文本片段
-    createTextSegment: (config: ProjectConfig): Promise<ApiResponse> =>
-        api.post('/text-segment', config).then(res => res.data),
+  // 文本片段
+  createTextSegment: (config: ProjectConfig): Promise<ApiResponse> =>
+    api.post('/text-segment', config).then(res => res.data),
 
-    // 音频片段
-    createAudioSegment: (config: ProjectConfig): Promise<ApiResponse> =>
-        api.post('/audio-segment', config).then(res => res.data),
+  // 音频片段
+  createAudioSegment: (config: ProjectConfig): Promise<ApiResponse> =>
+    api.post('/audio-segment', config).then(res => res.data),
 
-    // 视频片段
-    createVideoSegment: (config: ProjectConfig): Promise<ApiResponse> =>
-        api.post('/video-segment', config).then(res => res.data),
+  // 视频片段
+  createVideoSegment: (config: ProjectConfig): Promise<ApiResponse> =>
+    api.post('/video-segment', config).then(res => res.data),
 
-    // 视频动画
-    createVideoAnimation: (config: ProjectConfig): Promise<ApiResponse> =>
-        api.post('/video-animation', config).then(res => res.data),
+  // 视频动画
+  createVideoAnimation: (config: ProjectConfig): Promise<ApiResponse> =>
+    api.post('/video-animation', config).then(res => res.data),
 
-    // 文本动画
-    createTextAnimation: (config: ProjectConfig): Promise<ApiResponse> =>
-        api.post('/text-animation', config).then(res => res.data),
+  // 文本动画
+  createTextAnimation: (config: ProjectConfig): Promise<ApiResponse> =>
+    api.post('/text-animation', config).then(res => res.data),
 
-    // 转场效果
-    createTransition: (config: ProjectConfig): Promise<ApiResponse> =>
-        api.post('/transition', config).then(res => res.data),
+  // 转场效果
+  createTransition: (config: ProjectConfig): Promise<ApiResponse> =>
+    api.post('/transition', config).then(res => res.data),
 
-    // 背景填充
-    createBackgroundFilling: (config: ProjectConfig): Promise<ApiResponse> =>
-        api.post('/background-filling', config).then(res => res.data),
+  // 背景填充
+  createBackgroundFilling: (config: ProjectConfig): Promise<ApiResponse> =>
+    api.post('/background-filling', config).then(res => res.data),
 
-    // 文本特效
-    createTextEffects: (config: ProjectConfig): Promise<ApiResponse> =>
-        api.post('/text-effects', config).then(res => res.data),
+  // 文本特效
+  createTextEffects: (config: ProjectConfig): Promise<ApiResponse> =>
+    api.post('/text-effects', config).then(res => res.data),
 
-    // 综合项目
-    createComprehensive: (): Promise<ApiResponse> =>
-        api.post('/comprehensive').then(res => res.data),
+  // 综合项目（原版本）
+  createComprehensive: (): Promise<ApiResponse> =>
+    api.post('/comprehensive').then(res => res.data),
+
+  // 综合创作项目（新的集成版本）
+  createComprehensiveProject: (config: any): Promise<ApiResponse> =>
+    api.post('/comprehensive-create', config).then(res => res.data),
 };
 
 export default api;
