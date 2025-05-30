@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { 
   Card, Form, Input, Button, Select, Space, Typography, Row, Col, 
-  Checkbox, InputNumber, ColorPicker, Tabs, Alert, Spin, Modal, message, List
+  Checkbox, InputNumber, ColorPicker, Tabs, Alert, Spin, Modal, message, List, Upload
 } from 'antd';
 import { useMutation } from '@tanstack/react-query';
 import { 
   PlusOutlined, PlayCircleOutlined, FileTextOutlined, 
   AudioOutlined, VideoCameraOutlined, FontSizeOutlined,
-  ThunderboltOutlined, BgColorsOutlined 
+  ThunderboltOutlined, BgColorsOutlined, UploadOutlined, DeleteOutlined,
+  DownloadOutlined  // 添加缺失的图标导入
 } from '@ant-design/icons';
 import { Film, Sparkles } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { apiService } from '@/services/api';
+import PathSelectModal from '@/components/PathSelectModal';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -31,6 +33,15 @@ interface ProjectData {
   transition: ProjectSection;
 }
 
+interface UploadedAsset {
+  file?: File;
+  filename: string;
+  type: 'audio' | 'video';
+  url?: string;
+  source: 'upload' | 'download';
+  size?: number;
+}
+
 const CreateProject: React.FC = () => {
   const [form] = Form.useForm();
   const [projectData, setProjectData] = useState<ProjectData>({
@@ -43,6 +54,14 @@ const CreateProject: React.FC = () => {
   });
   const [previewVisible, setPreviewVisible] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<any>(null);
+  const [uploadedAssets, setUploadedAssets] = useState<UploadedAsset[]>([]);
+  const [downloadUrl, setDownloadUrl] = useState<{audio?: string, video?: string}>({});
+  const [downloading, setDownloading] = useState<{audio?: boolean, video?: boolean}>({});
+  const [pathModalVisible, setPathModalVisible] = useState(false);
+  const [currentProjectData, setCurrentProjectData] = useState<any>(null);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  // 添加缺失的状态变量
+  const [createLoading, setCreateLoading] = useState(false);
 
   // 综合项目生成mutation
   const generateMutation = useMutation({
@@ -122,6 +141,227 @@ const CreateProject: React.FC = () => {
     }
   };
 
+  const handleFileUpload = (file: File, type: 'audio' | 'video') => {
+    const url = URL.createObjectURL(file);
+    const asset: UploadedAsset = {
+      file,
+      filename: file.name,
+      type,
+      url,
+      source: 'upload',
+      size: file.size
+    };
+    
+    setUploadedAssets(prev => [
+      ...prev.filter(item => item.type !== type),
+      asset
+    ]);
+    
+    message.success(`${type === 'audio' ? '音频' : '视频'}文件上传成功`);
+    return false;
+  };
+
+  const handleUrlDownload = async (url: string, type: 'audio' | 'video') => {
+    if (!url.trim()) {
+      message.error('请输入有效的网址');
+      return;
+    }
+
+    setDownloading(prev => ({ ...prev, [type]: true }));
+    
+    try {
+      const response = await fetch('/api/download-from-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, type })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const asset: UploadedAsset = {
+          filename: result.filename,
+          type,
+          source: 'download',
+          size: result.size
+        };
+        
+        setUploadedAssets(prev => [
+          ...prev.filter(item => item.type !== type),
+          asset
+        ]);
+        
+        setDownloadUrl(prev => ({ ...prev, [type]: '' }));
+        message.success(`${type === 'audio' ? '音频' : '视频'}文件下载成功`);
+      } else {
+        const errorData = await response.json();
+        message.error(`下载失败: ${errorData.message}`);
+      }
+    } catch (error) {
+      message.error(`下载失败: ${error}`);
+    } finally {
+      setDownloading(prev => ({ ...prev, [type]: false }));
+    }
+  };
+
+  const removeAsset = (type: 'audio' | 'video') => {
+    setUploadedAssets(prev => {
+      const removed = prev.find(item => item.type === type);
+      if (removed?.url) {
+        URL.revokeObjectURL(removed.url);
+      }
+      return prev.filter(item => item.type !== type);
+    });
+    message.success(`${type === 'audio' ? '音频' : '视频'}文件已移除`);
+  };
+
+  const handleDownloadPatch = async () => {
+    try {
+      setCreateLoading(true);
+      message.loading({ content: '正在准备项目数据...', key: 'create' });
+
+      // 检查是否已有生成的项目数据
+      if (generatedResult?.data) {
+        // 如果已有项目数据，直接使用
+        setCurrentProjectData(generatedResult.data);
+        message.success({ content: '使用当前项目数据，请选择工程目录', key: 'create' });
+        setCreateLoading(false);
+        setPathModalVisible(true);
+        return;
+      }
+
+      // 如果没有项目数据，需要先生成项目
+      const formData = form.getFieldsValue();
+      
+      // 构建配置对象
+      const config: any = {};
+      Object.keys(projectData).forEach(key => {
+        const section = projectData[key as keyof ProjectData];
+        config[key] = {
+          enabled: section.enabled,
+          config: { 
+            ...section.config, 
+            ...(formData[key] || {})
+          }
+        };
+      });
+
+      // 检查是否有启用的组件，如果没有则使用默认配置
+      const hasEnabledComponents = Object.values(config).some((item: any) => item.enabled);
+      if (!hasEnabledComponents) {
+        // 使用默认配置
+        config.audio = { enabled: true, config: { duration: '5s', volume: 0.6 } };
+        config.video = { enabled: true, config: { duration: '4.2s' } };
+        config.text = { enabled: true, config: { text: '默认项目', duration: '3s' } };
+        message.info('未启用组件，使用默认配置创建项目');
+      }
+
+      console.log('下载补丁包 - 使用配置:', config);
+
+      // 创建项目
+      const projectResponse = await fetch('/api/comprehensive-create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+
+      if (!projectResponse.ok) {
+        const errorData = await projectResponse.json();
+        throw new Error(errorData.message || '创建项目失败');
+      }
+
+      const projectResult = await projectResponse.json();
+      setCurrentProjectData(projectResult.data);
+
+      message.success({ content: '项目创建成功，请选择工程目录', key: 'create' });
+      setCreateLoading(false);
+      
+      // 显示路径选择弹窗
+      setPathModalVisible(true);
+
+    } catch (error: any) {
+      console.error('项目创建失败:', error);
+      message.error({ content: `项目创建失败: ${error.message}`, key: 'create' });
+      setCreateLoading(false);
+    }
+  };
+
+  const handlePathConfirm = async (projectDir: string) => {
+    if (!currentProjectData) {
+      message.error('没有项目数据，请重新创建项目');
+      setPathModalVisible(false);
+      return;
+    }
+
+    try {
+      setDownloadLoading(true);
+      message.loading({ content: '正在配置路径...', key: 'download' });
+
+      // 第一步：配置路径
+      const configResponse = await fetch('/api/select-project-dir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_data: currentProjectData,
+          project_dir: projectDir
+        })
+      });
+
+      if (!configResponse.ok) {
+        const errorResult = await configResponse.json();
+        throw new Error(errorResult.message || '路径配置失败');
+      }
+
+      const configResult = await configResponse.json();
+      
+      message.loading({ content: '正在生成补丁包...', key: 'download' });
+
+      // 第二步：下载补丁包
+      const downloadResponse = await fetch('/api/download-patch-simple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_data: configResult.data,
+          project_dir: projectDir
+        })
+      });
+
+      if (!downloadResponse.ok) {
+        const errorResult = await downloadResponse.json();
+        throw new Error(errorResult.message || '下载失败');
+      }
+
+      // 下载文件
+      const blob = await downloadResponse.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `jianying_project_${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      message.success({ 
+        content: `补丁包下载成功！工程目录: ${projectDir}`, 
+        key: 'download',
+        duration: 5
+      });
+
+      setPathModalVisible(false);
+      setDownloadLoading(false);
+
+    } catch (error) {
+      console.error('下载失败:', error);
+      message.error({ content: `下载失败: ${error.message}`, key: 'download' });
+      setDownloadLoading(false);
+    }
+  };
+
+  const handlePathCancel = () => {
+    setPathModalVisible(false);
+    setCurrentProjectData(null);
+  };
+
   const sectionConfigs = [
     {
       key: 'text',
@@ -141,11 +381,12 @@ const CreateProject: React.FC = () => {
       title: '音频片段',
       icon: <AudioOutlined />,
       color: '#52c41a',
-      description: '配置音频参数',
+      description: '配置音频参数并上传音频文件',
       fields: [
         { name: 'duration', label: '音频时长', type: 'input', default: '5s' },
         { name: 'volume', label: '音量大小', type: 'number', default: 0.6, min: 0, max: 1, step: 0.1 },
         { name: 'fade_in', label: '淡入时间', type: 'input', default: '1s' },
+        { name: 'upload', label: '上传音频', type: 'upload-audio' },
       ]
     },
     {
@@ -153,9 +394,10 @@ const CreateProject: React.FC = () => {
       title: '视频片段',
       icon: <VideoCameraOutlined />,
       color: '#fa8c16',
-      description: '设置视频参数',
+      description: '设置视频参数并上传视频文件',
       fields: [
         { name: 'duration', label: '视频时长', type: 'input', default: '4.2s' },
+        { name: 'upload', label: '上传视频', type: 'upload-video' },
       ]
     },
     {
@@ -196,6 +438,150 @@ const CreateProject: React.FC = () => {
     },
   ];
 
+  const renderField = (field: any) => {
+    switch (field.type) {
+      case 'textarea':
+        return <TextArea rows={3} />;
+      case 'select':
+        return (
+          <Select>
+            {field.options?.map((option: string) => (
+              <Option key={option} value={option}>{option}</Option>
+            ))}
+          </Select>
+        );
+      case 'number':
+        return (
+          <InputNumber 
+            min={field.min} 
+            max={field.max} 
+            step={field.step}
+            style={{ width: '100%' }}
+          />
+        );
+      case 'color':
+        return <ColorPicker />;
+      case 'upload-audio':
+        return (
+          <div>
+            {uploadedAssets.find(item => item.type === 'audio') ? (
+              <div style={{ 
+                padding: '8px 12px', 
+                background: '#f6ffed', 
+                border: '1px solid #b7eb8f',
+                borderRadius: '6px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <span style={{ color: '#52c41a' }}>
+                  🎵 {uploadedAssets.find(item => item.type === 'audio')?.filename}
+                  {uploadedAssets.find(item => item.type === 'audio')?.source === 'download' && 
+                    <span style={{ fontSize: '12px', marginLeft: '8px', opacity: 0.7 }}>(网络下载)</span>
+                  }
+                </span>
+                <Button 
+                  type="text" 
+                  size="small" 
+                  icon={<DeleteOutlined />}
+                  onClick={() => removeAsset('audio')}
+                />
+              </div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: '8px' }}>
+                  <Upload
+                    beforeUpload={(file) => handleFileUpload(file, 'audio')}
+                    accept="audio/*"
+                    showUploadList={false}
+                  >
+                    <Button icon={<UploadOutlined />} style={{ width: '100%' }}>
+                      选择本地音频文件
+                    </Button>
+                  </Upload>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Input
+                    placeholder="输入音频网址"
+                    value={downloadUrl.audio || ''}
+                    onChange={(e) => setDownloadUrl(prev => ({ ...prev, audio: e.target.value }))}
+                    style={{ flex: 1 }}
+                  />
+                  <Button
+                    loading={downloading.audio}
+                    onClick={() => handleUrlDownload(downloadUrl.audio || '', 'audio')}
+                    disabled={!downloadUrl.audio?.trim()}
+                  >
+                    下载
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      case 'upload-video':
+        return (
+          <div>
+            {uploadedAssets.find(item => item.type === 'video') ? (
+              <div style={{ 
+                padding: '8px 12px', 
+                background: '#fff7e6', 
+                border: '1px solid #ffd591',
+                borderRadius: '6px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <span style={{ color: '#fa8c16' }}>
+                  🎬 {uploadedAssets.find(item => item.type === 'video')?.filename}
+                  {uploadedAssets.find(item => item.type === 'video')?.source === 'download' && 
+                    <span style={{ fontSize: '12px', marginLeft: '8px', opacity: 0.7 }}>(网络下载)</span>
+                  }
+                </span>
+                <Button 
+                  type="text" 
+                  size="small" 
+                  icon={<DeleteOutlined />}
+                  onClick={() => removeAsset('video')}
+                />
+              </div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: '8px' }}>
+                  <Upload
+                    beforeUpload={(file) => handleFileUpload(file, 'video')}
+                    accept="video/*"
+                    showUploadList={false}
+                  >
+                    <Button icon={<UploadOutlined />} style={{ width: '100%' }}>
+                      选择本地视频文件
+                    </Button>
+                  </Upload>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Input
+                    placeholder="输入视频网址"
+                    value={downloadUrl.video || ''}
+                    onChange={(e) => setDownloadUrl(prev => ({ ...prev, video: e.target.value }))}
+                    style={{ flex: 1 }}
+                  />
+                  <Button
+                    loading={downloading.video}
+                    onClick={() => handleUrlDownload(downloadUrl.video || '', 'video')}
+                    disabled={!downloadUrl.video?.trim()}
+                  >
+                    下载
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      default:
+        return <Input />;
+    }
+  };
+
   const tabItems = sectionConfigs.map(section => ({
     key: section.key,
     label: (
@@ -226,26 +612,7 @@ const CreateProject: React.FC = () => {
                   label={field.label}
                   initialValue={field.default}
                 >
-                  {field.type === 'textarea' ? (
-                    <TextArea rows={3} />
-                  ) : field.type === 'select' ? (
-                    <Select>
-                      {field.options?.map(option => (
-                        <Option key={option} value={option}>{option}</Option>
-                      ))}
-                    </Select>
-                  ) : field.type === 'number' ? (
-                    <InputNumber 
-                      min={field.min} 
-                      max={field.max} 
-                      step={field.step}
-                      style={{ width: '100%' }}
-                    />
-                  ) : field.type === 'color' ? (
-                    <ColorPicker />
-                  ) : (
-                    <Input />
-                  )}
+                  {renderField(field)}
                 </Form.Item>
               </Col>
             ))}
@@ -256,7 +623,7 @@ const CreateProject: React.FC = () => {
   }));
 
   return (
-    <div>
+    <div className="create-project">
       <div style={{ marginBottom: '24px' }}>
         <Title level={2}>
           <Space>
@@ -311,6 +678,26 @@ const CreateProject: React.FC = () => {
                 </div>
               </div>
 
+              {uploadedAssets.length > 0 && (
+                <div>
+                  <Text strong>已上传素材:</Text>
+                  <div style={{ marginTop: 8 }}>
+                    {uploadedAssets.map((asset, index) => (
+                      <div key={index} style={{ 
+                        fontSize: '12px', 
+                        color: '#666',
+                        marginBottom: '4px'
+                      }}>
+                        {asset.type === 'audio' ? '🎵' : '🎬'} {asset.filename}
+                        <span style={{ opacity: 0.7, marginLeft: '4px' }}>
+                          ({asset.source === 'upload' ? '本地上传' : '网络下载'})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <Alert
                 message="集成说明"
                 description="所有选中的组件将被集成到一个统一的剪映项目JSON文件中，按时间轴顺序排列。"
@@ -330,6 +717,28 @@ const CreateProject: React.FC = () => {
               >
                 {generateMutation.isPending ? '生成中...' : '生成集成项目'}
               </Button>
+
+              {/* 添加独立的下载补丁包按钮 */}
+              <Button
+                type="dashed"
+                size="large"
+                icon={<DownloadOutlined />}
+                loading={createLoading || downloadLoading}
+                onClick={handleDownloadPatch}
+                block
+                style={{ marginTop: 8 }}
+                disabled={createLoading || downloadLoading}
+              >
+                {(createLoading || downloadLoading) ? '处理中...' : '📦 直接下载补丁包'}
+              </Button>
+
+              <Alert
+                message="下载说明"
+                description="可以直接下载补丁包，系统会根据当前配置自动生成项目。如果未配置组件，将使用默认模板。"
+                type="info"
+                showIcon
+                style={{ marginTop: 8 }}
+              />
 
               <Alert
                 message="提示"
@@ -427,23 +836,32 @@ const CreateProject: React.FC = () => {
             复制结果
           </Button>,
           <Button
-            key="download"
+            key="download-json"
             onClick={() => {
               if (generatedResult) {
-                const blob = new Blob([JSON.stringify(generatedResult, null, 2)], {
+                const blob = new Blob([JSON.stringify(generatedResult.data, null, 2)], {
                   type: 'application/json'
                 });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `project_${Date.now()}.json`;
+                a.download = `draft_content_${Date.now()}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
-                message.success('文件下载完成');
+                message.success('JSON文件下载完成');
               }
             }}
           >
-            下载文件
+            下载JSON
+          </Button>,
+          <Button
+            key="download-patch"
+            type="dashed"
+            onClick={handleDownloadPatch}
+            loading={createLoading || downloadLoading}
+            icon={<DownloadOutlined />}
+          >
+            📦 下载完整补丁包
           </Button>,
         ]}
         width={900}
@@ -504,6 +922,11 @@ const CreateProject: React.FC = () => {
                                   <div>
                                     {item.content && <div>内容: {item.content}</div>}
                                     {item.duration && <div>时长: {item.duration}</div>}
+                                    {item.file_exists !== undefined && (
+                                      <div style={{ color: item.file_exists ? '#52c41a' : '#faad14' }}>
+                                        素材状态: {item.file_exists ? '✅ 文件存在' : '⚠️ 需要素材文件'}
+                                      </div>
+                                    )}
                                     {item.note && <div style={{ color: '#faad14' }}>注意: {item.note}</div>}
                                   </div>
                                 }
@@ -514,6 +937,126 @@ const CreateProject: React.FC = () => {
                       ) : (
                         <div style={{ textAlign: 'center', padding: '20px' }}>
                           <Text type="secondary">暂无组件信息</Text>
+                        </div>
+                      )}
+                    </div>
+                  )
+                },
+                {
+                  key: 'assets',
+                  label: '素材文件',
+                  children: (
+                    <div style={{ height: '400px', overflow: 'auto' }}>
+                      {(uploadedAssets.length > 0 || generatedResult.summary?.assets?.length > 0) ? (
+                        <div>
+                          <Alert
+                            message="素材文件说明"
+                            description="以下是项目所需的素材文件，下载补丁包将包含这些文件。"
+                            type="info"
+                            showIcon
+                            style={{ marginBottom: 16 }}
+                          />
+                          
+                          {/* 用户上传的素材 */}
+                          {uploadedAssets.length > 0 && (
+                            <div style={{ marginBottom: 16 }}>
+                              <Text strong style={{ color: '#1890ff' }}>用户素材:</Text>
+                              <List
+                                size="small"
+                                dataSource={uploadedAssets}
+                                renderItem={(asset: UploadedAsset) => (
+                                  <List.Item>
+                                    <List.Item.Meta
+                                      title={
+                                        <Space>
+                                          <span>{asset.filename}</span>
+                                          <span style={{ 
+                                            fontSize: '12px', 
+                                            padding: '2px 6px', 
+                                            borderRadius: '4px',
+                                            backgroundColor: asset.type === 'video' ? '#1890ff' : '#52c41a',
+                                            color: 'white'
+                                          }}>
+                                            {asset.type}
+                                          </span>
+                                          <span style={{ 
+                                            fontSize: '12px', 
+                                            padding: '2px 6px', 
+                                            borderRadius: '4px',
+                                            backgroundColor: asset.source === 'upload' ? '#52c41a' : '#fa8c16',
+                                            color: 'white'
+                                          }}>
+                                            {asset.source === 'upload' ? '本地' : '网络'}
+                                          </span>
+                                        </Space>
+                                      }
+                                      description={
+                                        <div>
+                                          {asset.size && <div>文件大小: {(asset.size / (1024 * 1024)).toFixed(2)} MB</div>}
+                                          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                            来源: {asset.source === 'upload' ? '用户上传' : '网络下载'}的{asset.type === 'audio' ? '音频' : '视频'}文件
+                                          </div>
+                                        </div>
+                                      }
+                                    />
+                                  </List.Item>
+                                )}
+                              />
+                            </div>
+                          )}
+                          
+                          {/* 系统默认素材 */}
+                          {generatedResult.summary?.assets?.length > 0 && (
+                            <div>
+                              <Text strong style={{ color: '#666' }}>系统默认素材:</Text>
+                              <List
+                                size="small"
+                                dataSource={generatedResult.summary.assets}
+                                renderItem={(asset: any) => (
+                                  <List.Item>
+                                    <List.Item.Meta
+                                      title={
+                                        <Space>
+                                          <span>{asset.filename}</span>
+                                          <span style={{ 
+                                            fontSize: '12px', 
+                                            padding: '2px 6px', 
+                                            borderRadius: '4px',
+                                            backgroundColor: '#666',
+                                            color: 'white'
+                                          }}>
+                                            {asset.type}
+                                          </span>
+                                        </Space>
+                                      }
+                                      description={
+                                        <div>
+                                          <div>{asset.description}</div>
+                                          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                            路径: {asset.path}
+                                          </div>
+                                        </div>
+                                      }
+                                    />
+                                  </List.Item>
+                                )}
+                              />
+                            </div>
+                          )}
+                          
+                          <div style={{ marginTop: 16, textAlign: 'center' }}>
+                            <Button type="primary" onClick={handleDownloadPatch}>
+                              📦 下载完整补丁包
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                          <Text type="secondary">当前项目无需素材文件</Text>
+                          <br />
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            请在相应组件中上传音视频文件，或启用需要素材的组件
+                          </Text>
                         </div>
                       )}
                     </div>
@@ -531,6 +1074,14 @@ const CreateProject: React.FC = () => {
           </div>
         )}
       </Modal>
+
+      {/* 路径选择弹窗 */}
+      <PathSelectModal
+        visible={pathModalVisible}
+        onCancel={handlePathCancel}
+        onConfirm={handlePathConfirm}
+        loading={downloadLoading}
+      />
     </div>
   );
 };
