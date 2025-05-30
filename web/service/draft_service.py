@@ -192,7 +192,7 @@ class DraftService:
             # 处理文本组件
             if config.get('text', {}).get('enabled', False):
                 if not text_track_added:
-                    script.add_track(Track_type.text)
+                    script.add_track(Track_type.text, "普通文本")
                     text_track_added = True
 
                 text_config = config['text'].get('config', {})
@@ -207,7 +207,7 @@ class DraftService:
                     style=draft.Text_style(color=tuple(text_config.get('color', [1.0, 1.0, 1.0]))),
                     clip_settings=draft.Clip_settings(transform_y=-0.8),
                 )
-                script.add_segment(text_segment)
+                script.add_segment(text_segment, "普通文本")
                 enabled_features.append('文本片段')
                 segments_info.append({
                     'type': '文本',
@@ -220,8 +220,8 @@ class DraftService:
 
             # 处理动画组件 - 添加到新的文本轨道
             if config.get('animation', {}).get('enabled', False):
-                # 为动画文本添加新的轨道
-                script.add_track(Track_type.text)
+                # 为动画文本添加新的轨道，指定不同的名称
+                script.add_track(Track_type.text, "动画文本")
 
                 animation_config = config['animation'].get('config', {})
                 animation_text = animation_config.get('text', '这是动画文本')
@@ -236,7 +236,7 @@ class DraftService:
                     clip_settings=draft.Clip_settings(transform_y=-0.3),
                 )
                 animated_text.add_animation(draft.Text_outro.故障闪动, duration=tim("1s"))
-                script.add_segment(animated_text)
+                script.add_segment(animated_text, "动画文本")
 
                 enabled_features.append('动画效果')
                 segments_info.append({
@@ -251,8 +251,8 @@ class DraftService:
 
             # 处理特效组件 - 添加到新的文本轨道
             if config.get('effects', {}).get('enabled', False):
-                # 为特效文本添加新的轨道
-                script.add_track(Track_type.text)
+                # 为特效文本添加新的轨道，指定不同的名称
+                script.add_track(Track_type.text, "特效文本")
 
                 effects_config = config['effects'].get('config', {})
                 effects_text = effects_config.get('text', '这是特效文本')
@@ -266,7 +266,7 @@ class DraftService:
                     style=draft.Text_style(color=(0.0, 1.0, 1.0)),
                     clip_settings=draft.Clip_settings(transform_y=0.3),
                 )
-                script.add_segment(effects_segment)
+                script.add_segment(effects_segment, "特效文本")
 
                 enabled_features.append('文本特效')
                 segments_info.append({
@@ -282,7 +282,7 @@ class DraftService:
             if config.get('audio', {}).get('enabled', False):
                 if available_assets['audio']:
                     if not audio_track_added:
-                        script.add_track(Track_type.audio)
+                        script.add_track(Track_type.audio, "音频轨道")
                         audio_track_added = True
 
                     audio_config = config['audio'].get('config', {})
@@ -318,7 +318,7 @@ class DraftService:
                                 audio_segment.add_fade(fade_in, "0s")
 
                             # 添加到脚本
-                            script.add_segment(audio_segment)
+                            script.add_segment(audio_segment, "音频轨道")
 
                             enabled_features.append('音频片段')
                             segments_info.append({
@@ -360,7 +360,7 @@ class DraftService:
             if config.get('video', {}).get('enabled', False):
                 if available_assets['video']:
                     if not video_track_added:
-                        script.add_track(Track_type.video)
+                        script.add_track(Track_type.video, "视频轨道")
                         video_track_added = True
 
                     video_config = config['video'].get('config', {})
@@ -390,7 +390,7 @@ class DraftService:
                             )
 
                             # 添加到脚本
-                            script.add_segment(video_segment)
+                            script.add_segment(video_segment, "视频轨道")
 
                             enabled_features.append('视频片段')
                             segments_info.append({
@@ -453,10 +453,10 @@ class DraftService:
             project_data = json.loads(draft_json)
             
             # 计算总时长
-            total_duration = f"{max(current_text_time, 5)}s"  # 至少5秒
+            total_duration = f"{max(current_text_time, 5)}s" # 至少5秒
             
             # 统计轨道数量
-            text_tracks_count = sum(1 for track in script.tracks if hasattr(track, 'type') and track.type == Track_type.text)
+            text_tracks_count = sum(1 for track in script.tracks.values() if hasattr(track, 'track_type') and track.track_type == Track_type.text)
             
             # 构建响应
             result = {
@@ -476,7 +476,7 @@ class DraftService:
                     },
                     "available_assets": available_assets,
                     "warnings": warnings,
-                    "track_structure": "每种文本效果使用独立轨道，避免时间冲突"
+                    "track_structure": "每种文本效果使用独立的命名轨道，避免冲突"
                 },
                 "user_tips": {
                     "missing_assets": warnings,
