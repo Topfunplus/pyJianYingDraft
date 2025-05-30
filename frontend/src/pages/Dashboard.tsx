@@ -18,14 +18,13 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-  ApiOutlined,
   ProjectOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   RocketOutlined,
   ThunderboltOutlined,
 } from "@ant-design/icons";
-import { Activity, Server, Zap, Film } from "lucide-react";
+import { Activity, Server, Film } from "lucide-react";
 import { apiService } from "@/services/api";
 import Editor from "@monaco-editor/react";
 
@@ -58,8 +57,6 @@ const Dashboard: React.FC = () => {
             text: "仪表盘测试文本",
             duration: "2s",
           });
-        case "health":
-          return apiService.healthCheck();
         case "comprehensive":
           return apiService.createComprehensive();
         default:
@@ -81,18 +78,13 @@ const Dashboard: React.FC = () => {
     const titles: { [key: string]: string } = {
       "basic-project": "创建基础项目",
       "text-segment": "文本片段测试",
-      health: "API状态检查",
       comprehensive: "综合功能测试",
     };
     return titles[apiType] || apiType;
   };
 
   const handleQuickAction = (actionType: string) => {
-    if (actionType === "api-test") {
-      navigate("/api-test");
-    } else {
-      testMutation.mutate(actionType);
-    }
+    testMutation.mutate(actionType);
   };
 
   const recentActivities = [
@@ -114,12 +106,6 @@ const Dashboard: React.FC = () => {
       icon: <ThunderboltOutlined />,
       color: "#52c41a",
       action: "text-segment",
-    },
-    {
-      title: "API 状态检查",
-      icon: <ApiOutlined />,
-      color: "#faad14",
-      action: "health",
     },
     {
       title: "综合功能测试",
@@ -151,40 +137,13 @@ const Dashboard: React.FC = () => {
             </Space>
           </Title>
           <Paragraph type="secondary">
-            欢迎使用 pyJianYingDraft API
-            Dashboard，这里是您的剪映草稿自动化控制中心
+            欢迎使用 pyJianYingDraft 控制中心，这里是您的剪映草稿自动化控制中心
           </Paragraph>
         </div>
 
         <Row gutter={[16, 16]}>
-          {/* 系统状态卡片 */}
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="API 状态"
-                value={healthData?.status === "running" ? "运行中" : "离线"}
-                prefix={<Server size={16} />}
-                valueStyle={{
-                  color:
-                    healthData?.status === "running" ? "#3f8600" : "#cf1322",
-                }}
-              />
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="可用接口"
-                value={Object.keys(healthData?.endpoints || {}).length}
-                prefix={<ApiOutlined />}
-                suffix="个"
-                valueStyle={{ color: "#1890ff" }}
-              />
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} lg={6}>
+          {/* 系统状态卡片 - 删除API状态，保留其他卡片 */}
+          <Col xs={24} sm={12} lg={8}>
             <Card>
               <Statistic
                 title="系统版本"
@@ -195,7 +154,7 @@ const Dashboard: React.FC = () => {
             </Card>
           </Col>
 
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={8}>
             <Card>
               <div>
                 <Text strong>系统性能</Text>
@@ -219,8 +178,8 @@ const Dashboard: React.FC = () => {
             <Card
               title="🚀 快速操作"
               extra={
-                <Button type="link" onClick={() => navigate("/api-test")}>
-                  查看更多
+                <Button type="link" onClick={() => navigate("/create")}>
+                  开始创作
                 </Button>
               }>
               <Row gutter={[8, 8]}>
@@ -250,15 +209,9 @@ const Dashboard: React.FC = () => {
             </Card>
           </Col>
 
-          {/* 最近活动 */}
+          {/* 最近活动 - 移除了查看全部按钮，它指向项目管理页面 */}
           <Col xs={24} lg={12}>
-            <Card
-              title="📊 最近活动"
-              extra={
-                <Button type="link" onClick={() => navigate("/projects")}>
-                  查看全部
-                </Button>
-              }>
+            <Card title="📊 最近活动">
               <List
                 size="small"
                 dataSource={recentActivities}
@@ -290,41 +243,7 @@ const Dashboard: React.FC = () => {
           </Col>
         </Row>
 
-        {/* API 接口列表 */}
-        <Row style={{ marginTop: "24px" }}>
-          <Col span={24}>
-            <Card title="🔗 可用 API 接口">
-              <Row gutter={[16, 16]}>
-                {Object.entries(healthData?.endpoints || {}).map(
-                  ([endpoint, description]) => (
-                    <Col xs={24} sm={12} lg={8} key={endpoint}>
-                      <Card size="small" hoverable>
-                        <Space
-                          direction="vertical"
-                          size={4}
-                          style={{ width: "100%" }}>
-                          <Text code style={{ fontSize: "12px" }}>
-                            {endpoint}
-                          </Text>
-                          <Text type="secondary" style={{ fontSize: "12px" }}>
-                            {description}
-                          </Text>
-                          <Button
-                            type="link"
-                            size="small"
-                            style={{ padding: 0 }}
-                            onClick={() => navigate("/api-test")}>
-                            测试接口 →
-                          </Button>
-                        </Space>
-                      </Card>
-                    </Col>
-                  )
-                )}
-              </Row>
-            </Card>
-          </Col>
-        </Row>
+        {/* 删除API接口列表部分 */}
 
         {/* 结果显示模态框 */}
         <Modal

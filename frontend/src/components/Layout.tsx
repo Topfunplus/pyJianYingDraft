@@ -3,7 +3,6 @@ import { Layout as AntLayout, Menu, theme, Typography, Avatar, Space, Badge } fr
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined,
-  ApiOutlined,
   ProjectOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -36,16 +35,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       key: '/create',
       icon: <ProjectOutlined />,
       label: '开始创作',
-    },
-    {
-      key: '/api-test',
-      icon: <ApiOutlined />,
-      label: 'API 测试',
-    },
-    {
-      key: '/projects',
-      icon: <ProjectOutlined />,
-      label: '项目管理',
     },
   ];
 

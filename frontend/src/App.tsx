@@ -5,8 +5,6 @@ import { ConfigProvider, theme, App as AntApp } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
-import ApiTest from "@/pages/ApiTest";
-import ProjectManager from "@/pages/ProjectManager";
 import CreateProject from "@/pages/CreateProject";
 import "./App.css";
 
@@ -45,8 +43,7 @@ const App: React.FC = () => {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/create" element={<CreateProject />} />
-                <Route path="/api-test" element={<ApiTest />} />
-                <Route path="/projects" element={<ProjectManager />} />
+                {/* 已删除项目管理路由 */}
               </Routes>
             </Layout>
           </Router>

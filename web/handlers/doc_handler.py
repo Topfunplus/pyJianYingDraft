@@ -56,6 +56,7 @@ def show_documentation():
             <button class="test-button" onclick="testAPI('/api/health', 'GET')">健康检查</button>
             <button class="test-button" onclick="testAPI('/api/basic-project', 'POST')">创建基础项目</button>
             <button class="test-button" onclick="testAPI('/api/text-segment', 'POST', {text: 'API测试', duration: '2s'})">创建文本片段</button>
+            <button class="test-button" onclick="testComprehensiveCreate()">🎬 综合创作</button>
             <button class="test-button" onclick="testDownloadAPI()">测试网络下载</button>
             <button class="test-button" onclick="testSimplePatch()">测试简单补丁包</button>
             <button class="test-button" onclick="showDownloadModal()">📦 下载完整补丁包</button>
@@ -112,6 +113,56 @@ def show_documentation():
             <p><strong>功能:</strong> 🆕 综合创作项目，支持多组件配置集成</p>
             <p><strong>参数:</strong> 组件配置对象，支持文本、音频、视频、动画、特效等</p>
             <p><strong>说明:</strong> 自动使用用户上传/下载的素材文件，支持本地上传和网络下载</p>
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 8px;">
+                <strong>📋 请求示例:</strong>
+                <pre style="font-size: 12px; margin: 5px 0;">{
+  "text": { 
+    "enabled": true, 
+    "config": { 
+      "text": "测试文本", 
+      "duration": "3s",
+      "color": [1.0, 1.0, 0.0],
+      "font": "文轩体"
+    } 
+  },
+  "audio": { 
+    "enabled": true, 
+    "config": { 
+      "duration": "5s", 
+      "volume": 0.6,
+      "fade_in": "1s"
+    } 
+  },
+  "video": { 
+    "enabled": true, 
+    "config": { "duration": "4.2s" } 
+  },
+  "animation": { 
+    "enabled": true, 
+    "config": { 
+      "text": "动画文本", 
+      "animation_type": "故障闪动",
+      "duration": "2s"
+    } 
+  },
+  "effects": { 
+    "enabled": true, 
+    "config": { 
+      "text": "特效文本", 
+      "effect_type": "bubble",
+      "duration": "3s"
+    } 
+  },
+  "transition": { 
+    "enabled": true, 
+    "config": { 
+      "transition_type": "信号故障",
+      "segment1_duration": "2s",
+      "segment2_duration": "2s"
+    } 
+  }
+}</pre>
+            </div>
         </div>
         
         <div class="endpoint new-feature">
@@ -437,6 +488,127 @@ def show_documentation():
                 resultDiv.style.border = '2px solid #dc3545';
             }
         }
+        
+        // 添加综合创作测试功能
+        async function testComprehensiveCreate() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '🔄 正在测试综合创作功能...';
+
+            try {
+                // 构建与前端"开始创作"页面相同的配置数据
+                const testConfig = {
+                    text: { 
+                        enabled: true, 
+                        config: { 
+                            text: 'API测试 - 综合创作项目', 
+                            duration: '3s',
+                            color: [1.0, 1.0, 0.0],  // 黄色
+                            font: '文轩体'
+                        } 
+                    },
+                    audio: { 
+                        enabled: true, 
+                        config: { 
+                            duration: '5s', 
+                            volume: 0.6,
+                            fade_in: '1s'
+                        } 
+                    },
+                    video: { 
+                        enabled: true, 
+                        config: { 
+                            duration: '4.2s' 
+                        } 
+                    },
+                    animation: { 
+                        enabled: true, 
+                        config: { 
+                            text: '动画测试文本', 
+                            animation_type: '故障闪动',
+                            duration: '2s'
+                        } 
+                    },
+                    effects: { 
+                        enabled: true, 
+                        config: { 
+                            text: '特效测试文本', 
+                            effect_type: 'bubble',
+                            duration: '3s'
+                        } 
+                    },
+                    transition: { 
+                        enabled: true, 
+                        config: { 
+                            transition_type: '信号故障',
+                            segment1_duration: '2s',
+                            segment2_duration: '2s'
+                        } 
+                    }
+                };
+                
+                console.log('📝 测试配置:', testConfig);
+                
+                const response = await fetch('/api/comprehensive-create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testConfig)
+                });
+                
+                const result = await response.json();
+                
+                let displayContent = `
+                    <strong>🎯 POST /api/comprehensive-create</strong><br>
+                    <strong>状态:</strong> ${response.status}<br>
+                    <strong>测试配置:</strong> 启用所有组件（文本、音频、视频、动画、特效、转场）<br>
+                `;
+                
+                if (response.ok && result.success) {
+                    displayContent += `
+                        <strong>✅ 综合创作成功!</strong><br>
+                        <strong>项目信息:</strong><br>
+                        - 总时长: ${result.summary?.total_duration || '未知'}<br>
+                        - 组件数量: ${result.summary?.components_count || 0}<br>
+                        - 启用功能: ${result.summary?.enabled_features?.join(', ') || '无'}<br>
+                        - 素材文件: ${result.summary?.assets?.length || 0} 个<br>
+                        <strong>组件详情:</strong><br>
+                    `;
+                    
+                    if (result.summary?.segments) {
+                        result.summary.segments.forEach((segment, index) => {
+                            displayContent += `${index + 1}. ${segment.type}: ${segment.content || segment.filename || segment.transition_type || '配置完成'}<br>`;
+                        });
+                    }
+                    
+                    displayContent += `
+                        <br><strong>📦 可下载内容:</strong><br>
+                        - JSON项目文件 (draft_content.json)<br>
+                        - 完整补丁包 (包含素材文件)<br>
+                        - 可直接导入剪映使用<br>
+                        
+                        <br><strong>🔧 API响应数据:</strong><br>
+                        <pre style="max-height: 200px; overflow-y: auto; font-size: 11px;">${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                } else {
+                    displayContent += `
+                        <strong>❌ 请求失败</strong><br>
+                        <strong>错误信息:</strong> ${result.message || '未知错误'}<br>
+                        <strong>响应:</strong><br>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                }
+                
+                resultDiv.innerHTML = displayContent;
+                resultDiv.style.border = `2px solid ${response.ok && result.success ? '#28a745' : '#dc3545'}`;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <strong>❌ 综合创作测试失败:</strong> ${error.message}<br>
+                    <strong>错误详情:</strong> 网络请求失败或服务器响应异常
+                `;
+                resultDiv.style.border = '2px solid #dc3545';
+            }
+        }
     </script>
 </body>
 </html>
@@ -451,36 +623,11 @@ def show_documentation():
             "error_type": type(e).__name__
         }), 500
 
-def health_check():
+def get_health_check():
     """健康检查接口"""
     return jsonify({
         "success": True,
         "message": "API服务正常运行",
-        "endpoints": {
-            "/api/basic-project": "创建基础项目",
-            "/api/audio-segment": "创建音频片段",
-            "/api/video-segment": "创建视频片段", 
-            "/api/text-segment": "创建文本片段",
-            "/api/video-animation": "创建视频动画",
-            "/api/text-animation": "创建文本动画",
-            "/api/transition": "创建转场效果",
-            "/api/background-filling": "创建背景填充",
-            "/api/text-effects": "创建文本特效",
-            "/api/comprehensive": "创建综合项目",
-            "/api/comprehensive-create": "综合创作项目（集成版）",
-            "/api/download-from-url": "🆕 网络下载音视频文件",
-            "/api/download-patch-with-files": "🆕 下载完整补丁包（配置绝对路径）",
-            "/api/download-simple-patch": "🆕 下载简单补丁包（测试用）"
-        },
         "version": "1.3.1",
-        "status": "running",
-        "new_features": [
-            "网络URL下载音视频文件",
-            "智能文件管理和存储",
-            "完整补丁包生成",
-            "多种素材来源支持",
-            "用户选择工程目录",
-            "自动绝对路径配置",
-            "简单补丁包测试功能"
-        ]
+        "status": "running"
     })
