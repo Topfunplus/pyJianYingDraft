@@ -28,15 +28,11 @@ class DraftService:
     def create_basic_project():
         """创建基础项目"""
         logger.info("🎬 开始创建基础项目")
-
         script = create_basic_script()
         script.add_track(draft.Track_type.video)
-
         output_path = get_output_path("basic_project")
         script.dump(output_path)
-
         logger.info(f"✅ 基础项目创建成功: {output_path}")
-
         return {
             "success": True,
             "message": "基础项目创建成功",

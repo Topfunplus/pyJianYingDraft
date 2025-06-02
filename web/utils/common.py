@@ -1,10 +1,8 @@
 import os
 import sys
-import json
 import uuid
 import time
 import hashlib
-import copy
 from functools import wraps
 from flask import jsonify, request
 from urllib.parse import urlparse
@@ -12,6 +10,7 @@ import mimetypes
 
 # 添加父目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+# 导入整个目录作为一个对象
 import pyJianYingDraft as draft
 from config.settings import get_asset_path, get_output_path
 from logs.logger import setup_logger
