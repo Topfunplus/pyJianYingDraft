@@ -186,7 +186,6 @@ const Dashboard: React.FC = () => {
                 type="info"
                 showIcon
                 style={{ marginTop: 16 }}
-                size="small"
               />
             </Card>
           </Col>
@@ -200,16 +199,7 @@ const Dashboard: React.FC = () => {
                 renderItem={(item) => (
                   <List.Item>
                     <Space>
-                      <Badge
-                        status={item.status as any}
-                        icon={
-                          item.status === "success" ? (
-                            <CheckCircleOutlined />
-                          ) : (
-                            <ClockCircleOutlined />
-                          )
-                        }
-                      />
+                      <Badge status={item.status as any} />
                       <div>
                         <Text strong>{item.title}</Text>
                         <br />
