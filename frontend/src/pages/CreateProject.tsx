@@ -12,15 +12,14 @@ import {
   Checkbox,
   InputNumber,
   ColorPicker,
-  Tabs,
   Alert,
   Spin,
   Modal,
   message,
   List,
   Upload,
-  Tag,
-  Collapse,
+  Steps,
+  Divider,
 } from "antd";
 import { useMutation } from "@tanstack/react-query";
 import {
@@ -33,9 +32,11 @@ import {
   BgColorsOutlined,
   UploadOutlined,
   DeleteOutlined,
-  DownloadOutlined,
+  CheckOutlined,
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
 } from "@ant-design/icons";
-import { Film, Sparkles } from "lucide-react";
+import { Film, Sparkles, Settings } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { apiService } from "@/services/api";
 import PathSelectModal from "@/components/PathSelectModal";
@@ -43,6 +44,7 @@ import PathSelectModal from "@/components/PathSelectModal";
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
+const { Step } = Steps;
 
 interface ProjectSection {
   enabled: boolean;
@@ -63,14 +65,16 @@ interface UploadedAsset {
   filename: string;
   type: "audio" | "video";
   url?: string;
-  source: "upload" | "download";
+  source: "upload";
   size?: number;
 }
 
 const CreateProject: React.FC = () => {
   const [form] = Form.useForm();
+  const [configModalVisible, setConfigModalVisible] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const [projectData, setProjectData] = useState<ProjectData>({
-    text: { enabled: true, config: {} },
+    text: { enabled: false, config: {} },
     audio: { enabled: false, config: {} },
     video: { enabled: false, config: {} },
     animation: { enabled: false, config: {} },
@@ -83,17 +87,6 @@ const CreateProject: React.FC = () => {
   const [pathModalVisible, setPathModalVisible] = useState(false);
   const [currentProjectData, setCurrentProjectData] = useState<any>(null);
   const [createLoading, setCreateLoading] = useState(false);
-
-  // 添加缺失的状态变量
-  const [downloadLoading, setDownloadLoading] = useState(false);
-  const [downloadUrl, setDownloadUrl] = useState<{
-    audio?: string;
-    video?: string;
-  }>({});
-  const [downloading, setDownloading] = useState<{
-    audio: boolean;
-    video: boolean;
-  }>({ audio: false, video: false });
 
   // 综合项目生成mutation
   const generateMutation = useMutation({
@@ -112,6 +105,7 @@ const CreateProject: React.FC = () => {
     onSuccess: (data) => {
       console.log("项目生成成功:", data);
       setGeneratedResult(data);
+      setConfigModalVisible(false);
       setPreviewVisible(true);
       message.success("项目生成成功！");
     },
@@ -132,6 +126,37 @@ const CreateProject: React.FC = () => {
       ...prev,
       [section]: { ...prev[section], enabled },
     }));
+  };
+
+  const handleFileUpload = (file: File, type: "audio" | "video") => {
+    const url = URL.createObjectURL(file);
+    const asset: UploadedAsset = {
+      file,
+      filename: file.name,
+      type,
+      url,
+      source: "upload",
+      size: file.size,
+    };
+
+    setUploadedAssets((prev) => [
+      ...prev.filter((item) => item.type !== type),
+      asset,
+    ]);
+
+    message.success(`${type === "audio" ? "音频" : "视频"}文件上传成功`);
+    return false;
+  };
+
+  const removeAsset = (type: "audio" | "video") => {
+    setUploadedAssets((prev) => {
+      const removed = prev.find((item) => item.type === type);
+      if (removed?.url) {
+        URL.revokeObjectURL(removed.url);
+      }
+      return prev.filter((item) => item.type !== type);
+    });
+    message.success(`${type === "audio" ? "音频" : "视频"}文件已移除`);
   };
 
   const handleGenerate = () => {
@@ -167,79 +192,6 @@ const CreateProject: React.FC = () => {
       console.error("配置生成失败:", error);
       message.error("配置生成失败，请检查输入参数");
     }
-  };
-
-  const handleFileUpload = (file: File, type: "audio" | "video") => {
-    const url = URL.createObjectURL(file);
-    const asset: UploadedAsset = {
-      file,
-      filename: file.name,
-      type,
-      url,
-      source: "upload",
-      size: file.size,
-    };
-
-    setUploadedAssets((prev) => [
-      ...prev.filter((item) => item.type !== type),
-      asset,
-    ]);
-
-    message.success(`${type === "audio" ? "音频" : "视频"}文件上传成功`);
-    return false;
-  };
-
-  const handleUrlDownload = async (url: string, type: "audio" | "video") => {
-    if (!url.trim()) {
-      message.error("请输入有效的网址");
-      return;
-    }
-
-    setDownloading((prev) => ({ ...prev, [type]: true }));
-
-    try {
-      const response = await fetch("/api/download-from-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, type }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        const asset: UploadedAsset = {
-          filename: result.filename,
-          type,
-          source: "download",
-          size: result.size,
-        };
-
-        setUploadedAssets((prev) => [
-          ...prev.filter((item) => item.type !== type),
-          asset,
-        ]);
-
-        setDownloadUrl((prev) => ({ ...prev, [type]: "" }));
-        message.success(`${type === "audio" ? "音频" : "视频"}文件下载成功`);
-      } else {
-        const errorData = await response.json();
-        message.error(`下载失败: ${errorData.message}`);
-      }
-    } catch (error) {
-      message.error(`下载失败: ${error}`);
-    } finally {
-      setDownloading((prev) => ({ ...prev, [type]: false }));
-    }
-  };
-
-  const removeAsset = (type: "audio" | "video") => {
-    setUploadedAssets((prev) => {
-      const removed = prev.find((item) => item.type === type);
-      if (removed?.url) {
-        URL.revokeObjectURL(removed.url);
-      }
-      return prev.filter((item) => item.type !== type);
-    });
-    message.success(`${type === "audio" ? "音频" : "视频"}文件已移除`);
   };
 
   const handleDownloadPatch = async () => {
@@ -506,26 +458,34 @@ const CreateProject: React.FC = () => {
     setCurrentProjectData(null);
   };
 
-  const sectionConfigs = [
+  const stepConfigs = [
     {
       key: "text",
       title: "文本片段",
       icon: <FontSizeOutlined />,
       color: "#1890ff",
-      description: "添加文字内容和样式",
+      description: "添加文字内容和样式设置",
       fields: [
         {
           name: "text",
           label: "文本内容",
           type: "textarea",
           default: "欢迎使用剪映助手",
+          required: true,
         },
-        { name: "duration", label: "显示时长", type: "input", default: "3s" },
+        {
+          name: "duration",
+          label: "显示时长",
+          type: "input",
+          default: "3s",
+          placeholder: "例如: 3s, 1.5s",
+        },
         {
           name: "font",
           label: "字体",
           type: "select",
           options: ["文轩体", "思源黑体", "微软雅黑"],
+          default: "文轩体",
         },
         {
           name: "color",
@@ -542,7 +502,13 @@ const CreateProject: React.FC = () => {
       color: "#52c41a",
       description: "配置音频参数并上传音频文件",
       fields: [
-        { name: "duration", label: "音频时长", type: "input", default: "5s" },
+        {
+          name: "duration",
+          label: "音频时长",
+          type: "input",
+          default: "5s",
+          placeholder: "例如: 5s, 10s",
+        },
         {
           name: "volume",
           label: "音量大小",
@@ -552,7 +518,13 @@ const CreateProject: React.FC = () => {
           max: 1,
           step: 0.1,
         },
-        { name: "fade_in", label: "淡入时间", type: "input", default: "1s" },
+        {
+          name: "fade_in",
+          label: "淡入时间",
+          type: "input",
+          default: "1s",
+          placeholder: "例如: 1s, 0.5s",
+        },
         { name: "upload", label: "上传音频", type: "upload-audio" },
       ],
     },
@@ -563,7 +535,13 @@ const CreateProject: React.FC = () => {
       color: "#fa8c16",
       description: "设置视频参数并上传视频文件",
       fields: [
-        { name: "duration", label: "视频时长", type: "input", default: "4.2s" },
+        {
+          name: "duration",
+          label: "视频时长",
+          type: "input",
+          default: "4.2s",
+          placeholder: "例如: 4.2s, 6s",
+        },
         { name: "upload", label: "上传视频", type: "upload-video" },
       ],
     },
@@ -572,21 +550,29 @@ const CreateProject: React.FC = () => {
       title: "动画效果",
       icon: <ThunderboltOutlined />,
       color: "#eb2f96",
-      description: "添加动画特效",
+      description: "为文本添加动画特效",
       fields: [
         {
           name: "text",
           label: "动画文本",
           type: "input",
           default: "动画效果展示",
+          placeholder: "输入要添加动画的文本",
         },
         {
           name: "animation_type",
           label: "动画类型",
           type: "select",
           options: ["渐显", "淡入", "弹跳", "故障闪动"],
+          default: "故障闪动",
         },
-        { name: "duration", label: "持续时间", type: "input", default: "2s" },
+        {
+          name: "duration",
+          label: "持续时间",
+          type: "input",
+          default: "2s",
+          placeholder: "例如: 2s, 1s",
+        },
       ],
     },
     {
@@ -594,16 +580,29 @@ const CreateProject: React.FC = () => {
       title: "文本特效",
       icon: <BgColorsOutlined />,
       color: "#722ed1",
-      description: "气泡和花字效果",
+      description: "添加气泡和花字等特效",
       fields: [
-        { name: "text", label: "特效文本", type: "input", default: "特效文字" },
+        {
+          name: "text",
+          label: "特效文本",
+          type: "input",
+          default: "特效文字",
+          placeholder: "输入要添加特效的文本",
+        },
         {
           name: "effect_type",
           label: "特效类型",
           type: "select",
           options: ["bubble", "flower"],
+          default: "bubble",
         },
-        { name: "duration", label: "显示时长", type: "input", default: "3s" },
+        {
+          name: "duration",
+          label: "显示时长",
+          type: "input",
+          default: "3s",
+          placeholder: "例如: 3s, 5s",
+        },
       ],
     },
     {
@@ -611,25 +610,28 @@ const CreateProject: React.FC = () => {
       title: "转场效果",
       icon: <PlayCircleOutlined />,
       color: "#13c2c2",
-      description: "视频转场过渡",
+      description: "设置视频片段间的转场过渡",
       fields: [
         {
           name: "transition_type",
           label: "转场类型",
           type: "select",
           options: ["信号故障", "淡化", "滑动"],
+          default: "信号故障",
         },
         {
           name: "segment1_duration",
           label: "前段时长",
           type: "input",
           default: "2s",
+          placeholder: "例如: 2s",
         },
         {
           name: "segment2_duration",
           label: "后段时长",
           type: "input",
           default: "2s",
+          placeholder: "例如: 2s",
         },
       ],
     },
@@ -638,10 +640,10 @@ const CreateProject: React.FC = () => {
   const renderField = (field: any) => {
     switch (field.type) {
       case "textarea":
-        return <TextArea rows={3} />;
+        return <TextArea rows={3} placeholder={field.placeholder} />;
       case "select":
         return (
-          <Select>
+          <Select placeholder={`请选择${field.label}`}>
             {field.options?.map((option: string) => (
               <Option key={option} value={option}>
                 {option}
@@ -656,6 +658,7 @@ const CreateProject: React.FC = () => {
             max={field.max}
             step={field.step}
             style={{ width: "100%" }}
+            placeholder={field.placeholder}
           />
         );
       case "color":
@@ -741,52 +744,190 @@ const CreateProject: React.FC = () => {
           </div>
         );
       default:
-        return <Input />;
+        return <Input placeholder={field.placeholder} />;
     }
   };
 
-  const tabItems = sectionConfigs.map((section) => ({
-    key: section.key,
-    label: (
-      <Space>
-        <span style={{ color: section.color }}>{section.icon}</span>
-        {section.title}
-      </Space>
-    ),
-    children: (
+  const getCurrentStepConfig = () => stepConfigs[currentStep];
+
+  const renderStepContent = () => {
+    if (currentStep >= stepConfigs.length) {
+      // 最后一步：项目总览
+      return (
+        <div>
+          <Title level={4} style={{ textAlign: "center", marginBottom: 24 }}>
+            <Sparkles size={20} style={{ marginRight: 8 }} />
+            项目配置总览
+          </Title>
+
+          <Alert
+            message="配置完成"
+            description="请确认您的项目配置，然后点击生成按钮创建项目"
+            type="success"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Card title="已启用组件" size="small">
+                <Space direction="vertical" style={{ width: "100%" }}>
+                  {Object.entries(projectData).map(([key, section]) => {
+                    const config = stepConfigs.find((s) => s.key === key);
+                    return section.enabled ? (
+                      <div
+                        key={key}
+                        style={{ display: "flex", alignItems: "center" }}>
+                        <span style={{ color: config?.color, marginRight: 8 }}>
+                          {config?.icon}
+                        </span>
+                        <Text strong>{config?.title}</Text>
+                        <CheckOutlined
+                          style={{ color: "#52c41a", marginLeft: 8 }}
+                        />
+                      </div>
+                    ) : null;
+                  })}
+                  {Object.values(projectData).every(
+                    (section) => !section.enabled
+                  ) && <Text type="secondary">未启用任何组件</Text>}
+                </Space>
+              </Card>
+            </Col>
+
+            <Col span={12}>
+              <Card title="上传素材" size="small">
+                <Space direction="vertical" style={{ width: "100%" }}>
+                  {uploadedAssets.map((asset, index) => (
+                    <div
+                      key={index}
+                      style={{ display: "flex", alignItems: "center" }}>
+                      <span style={{ marginRight: 8 }}>
+                        {asset.type === "audio" ? "🎵" : "🎬"}
+                      </span>
+                      <Text style={{ flex: 1 }}>
+                        {asset.filename.length > 20
+                          ? asset.filename.substring(0, 17) + "..."
+                          : asset.filename}
+                      </Text>
+                      <CheckOutlined style={{ color: "#52c41a" }} />
+                    </div>
+                  ))}
+                  {uploadedAssets.length === 0 && (
+                    <Text type="secondary">未上传任何素材</Text>
+                  )}
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+
+          <Divider />
+
+          <div style={{ textAlign: "center" }}>
+            <Button
+              type="primary"
+              size="large"
+              icon={<Sparkles size={20} />}
+              loading={generateMutation.isPending}
+              onClick={handleGenerate}
+              style={{
+                height: 48,
+                fontSize: 16,
+                paddingLeft: 32,
+                paddingRight: 32,
+              }}>
+              {generateMutation.isPending ? "生成中..." : "生成集成项目"}
+            </Button>
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary">
+                {Object.values(projectData).filter((s) => s.enabled).length ===
+                0
+                  ? "请返回启用至少一个组件"
+                  : `将生成包含 ${
+                      Object.values(projectData).filter((s) => s.enabled).length
+                    } 个组件的项目`}
+              </Text>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const stepConfig = getCurrentStepConfig();
+    const sectionKey = stepConfig.key as keyof ProjectData;
+    const isEnabled = projectData[sectionKey].enabled;
+
+    return (
       <div>
-        <div style={{ marginBottom: 16 }}>
-          <Checkbox
-            checked={projectData[section.key as keyof ProjectData].enabled}
-            onChange={(e) =>
-              handleSectionToggle(
-                section.key as keyof ProjectData,
-                e.target.checked
-              )
-            }>
-            <Text strong>启用 {section.title}</Text>
-          </Checkbox>
-          <br />
-          <Text type="secondary">{section.description}</Text>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div
+            style={{ color: stepConfig.color, fontSize: 48, marginBottom: 16 }}>
+            {stepConfig.icon}
+          </div>
+          <Title level={3}>{stepConfig.title}</Title>
+          <Text type="secondary">{stepConfig.description}</Text>
         </div>
 
-        {projectData[section.key as keyof ProjectData].enabled && (
-          <Row gutter={[16, 16]}>
-            {section.fields.map((field) => (
-              <Col xs={24} sm={12} lg={8} key={field.name}>
-                <Form.Item
-                  name={[section.key, field.name]}
-                  label={field.label}
-                  initialValue={field.default}>
-                  {renderField(field)}
-                </Form.Item>
-              </Col>
-            ))}
-          </Row>
+        <div style={{ marginBottom: 24 }}>
+          <Checkbox
+            checked={isEnabled}
+            onChange={(e) => handleSectionToggle(sectionKey, e.target.checked)}
+            style={{ fontSize: 16 }}>
+            <Text strong>启用 {stepConfig.title}</Text>
+          </Checkbox>
+        </div>
+
+        {isEnabled && (
+          <div>
+            <Divider />
+            <Row gutter={[16, 16]}>
+              {stepConfig.fields.map((field) => (
+                <Col xs={24} sm={12} key={field.name}>
+                  <Form.Item
+                    name={[stepConfig.key, field.name]}
+                    label={field.label}
+                    initialValue={field.default}
+                    rules={
+                      field.required
+                        ? [{ required: true, message: `请输入${field.label}` }]
+                        : []
+                    }>
+                    {renderField(field)}
+                  </Form.Item>
+                </Col>
+              ))}
+            </Row>
+          </div>
         )}
       </div>
-    ),
-  }));
+    );
+  };
+
+  const nextStep = () => {
+    if (currentStep < stepConfigs.length) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleConfigModalClose = () => {
+    setConfigModalVisible(false);
+    setCurrentStep(0);
+    form.resetFields();
+    setProjectData({
+      text: { enabled: false, config: {} },
+      audio: { enabled: false, config: {} },
+      video: { enabled: false, config: {} },
+      animation: { enabled: false, config: {} },
+      effects: { enabled: false, config: {} },
+      transition: { enabled: false, config: {} },
+    });
+  };
 
   return (
     <div className="create-project">
@@ -798,199 +939,118 @@ const CreateProject: React.FC = () => {
           </Space>
         </Title>
         <Paragraph type="secondary">
-          配置多媒体组件，一键生成综合剪映项目。支持文本、音频、视频、动画、特效等多种元素组合。
+          点击下方按钮，通过步骤式配置创建您的剪映项目。支持文本、音频、视频、动画、特效等多种元素组合。
         </Paragraph>
       </div>
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={16}>
-          <Card
-            title={
-              <Space>
-                <Sparkles size={20} color="#1890ff" />
-                项目配置
-              </Space>
-            }>
-            <Form form={form} layout="vertical">
-              <Tabs
-                defaultActiveKey="text"
-                items={tabItems}
-                tabPosition="top"
-                size="small"
-              />
-            </Form>
-          </Card>
-        </Col>
+      <div style={{ textAlign: "center", padding: "80px 0" }}>
+        <div style={{ marginBottom: 32 }}>
+          <Settings size={64} color="#1890ff" style={{ marginBottom: 16 }} />
+          <Title level={3} style={{ margin: 0 }}>
+            创建新项目
+          </Title>
+          <Text type="secondary" style={{ fontSize: 16 }}>
+            通过简单的步骤配置，快速生成专业的剪映项目
+          </Text>
+        </div>
 
-        {/* 项目概览 - 右侧卡片布局优化 */}
-        <Col xs={24} lg={8}>
-          <Card title="🎬 项目概览" size="small">
-            <Space direction="vertical" style={{ width: "100%" }} size={8}>
-              {/* 已启用组件部分 - 改为更紧凑的网格布局 */}
-              <div>
-                <Text strong>已启用组件:</Text>
-                <Row gutter={[8, 4]} style={{ marginTop: 4 }}>
-                  {Object.entries(projectData).map(([key, section]) => (
-                    <Col span={12} key={key}>
-                      <Checkbox
-                        checked={section.enabled}
-                        onChange={(e) =>
-                          handleSectionToggle(
-                            key as keyof ProjectData,
-                            e.target.checked
-                          )
-                        }
-                        style={{ fontSize: "12px" }}>
-                        <Text
-                          style={{
-                            fontSize: "12px",
-                            color: section.enabled ? "#1890ff" : "#999",
-                          }}>
-                          {sectionConfigs.find((s) => s.key === key)?.title}
-                        </Text>
-                      </Checkbox>
-                    </Col>
-                  ))}
-                </Row>
-              </div>
+        <Button
+          type="primary"
+          size="large"
+          icon={<PlusOutlined />}
+          onClick={() => setConfigModalVisible(true)}
+          style={{
+            height: 56,
+            fontSize: 18,
+            paddingLeft: 40,
+            paddingRight: 40,
+            borderRadius: 8,
+          }}>
+          开始配置项目
+        </Button>
+      </div>
 
-              {/* 已上传素材 - 只有在有素材时显示 */}
-              {uploadedAssets.length > 0 && (
-                <div style={{ marginTop: 0 }}>
-                  <Text strong>已上传素材:</Text>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "4px",
-                      marginTop: 4,
-                    }}>
-                    {uploadedAssets.map((asset, index) => (
-                      <Tag
-                        key={index}
-                        color={asset.type === "audio" ? "green" : "blue"}
-                        style={{ margin: "0", fontSize: "11px" }}>
-                        {asset.type === "audio" ? "🎵" : "🎬"}{" "}
-                        {asset.filename.length > 15
-                          ? asset.filename.substring(0, 12) + "..."
-                          : asset.filename}
-                      </Tag>
-                    ))}
-                  </div>
-                </div>
-              )}
+      {/* 项目配置弹窗 */}
+      <Modal
+        title={
+          <div style={{ textAlign: "center" }}>
+            <Space>
+              <Settings size={20} />
+              项目配置向导
+            </Space>
+          </div>
+        }
+        open={configModalVisible}
+        onCancel={handleConfigModalClose}
+        width={800}
+        footer={null}
+        destroyOnClose>
+        <div style={{ marginBottom: 24 }}>
+          <Steps
+            current={currentStep}
+            size="small"
+            items={[
+              ...stepConfigs.map((config, index) => ({
+                title: config.title,
+                icon: currentStep === index ? config.icon : undefined,
+                status: (currentStep === index
+                  ? "process"
+                  : currentStep > index
+                  ? "finish"
+                  : "wait") as "process" | "finish" | "wait",
+              })),
+              {
+                title: "生成项目",
+                icon:
+                  currentStep === stepConfigs.length ? (
+                    <Sparkles size={16} />
+                  ) : undefined,
+                status: (currentStep === stepConfigs.length
+                  ? "process"
+                  : currentStep > stepConfigs.length
+                  ? "finish"
+                  : "wait") as "process" | "finish" | "wait",
+              },
+            ]}
+          />
+        </div>
 
-              {/* 集成说明 - 改为更紧凑的提示 */}
-              <Alert
-                message="集成说明: 所有选中的组件将被集成到剪映项目中"
-                type="info"
-                showIcon
-                style={{ padding: "6px 10px", margin: "0" }}
-              />
+        <div style={{ minHeight: 400, padding: "24px 0" }}>
+          <Form form={form} layout="vertical">
+            {renderStepContent()}
+          </Form>
+        </div>
 
-              {/* 按钮组 - 主要按钮和下载按钮 */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            paddingTop: 16,
+            borderTop: "1px solid #f0f0f0",
+          }}>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={prevStep}
+            disabled={currentStep === 0}>
+            上一步
+          </Button>
+
+          <div>
+            <Text type="secondary" style={{ marginRight: 16 }}>
+              {currentStep + 1} / {stepConfigs.length + 1}
+            </Text>
+
+            {currentStep < stepConfigs.length ? (
               <Button
                 type="primary"
-                size="middle"
-                icon={<PlusOutlined />}
-                loading={generateMutation.isPending}
-                onClick={handleGenerate}
-                block
-                style={{ marginTop: 8 }}
-                disabled={generateMutation.isPending}>
-                {generateMutation.isPending ? "生成中..." : "生成集成项目"}
+                icon={<ArrowRightOutlined />}
+                onClick={nextStep}>
+                下一步
               </Button>
-
-              {/* 使用折叠面板替代多个提示 */}
-              <Collapse
-                ghost
-                bordered={false}
-                size="small"
-                style={{ margin: "0", padding: "0" }}
-                items={[
-                  {
-                    key: "1",
-                    label: (
-                      <Text style={{ fontSize: "12px", color: "#1890ff" }}>
-                        查看帮助信息
-                      </Text>
-                    ),
-                    children: (
-                      <ul
-                        style={{
-                          margin: "0",
-                          padding: "0 0 0 16px",
-                          fontSize: "12px",
-                          color: "#666",
-                        }}>
-                        <li>至少选择一个组件才能生成项目</li>
-                        <li>下载补丁包将包含所有必要素材</li>
-                        <li>系统会自动处理素材路径</li>
-                      </ul>
-                    ),
-                  },
-                ]}
-              />
-            </Space>
-          </Card>
-
-          {/* 快速模板 - 合并到主卡片中 */}
-          <div style={{ marginTop: 12 }}>
-            <Card title="🚀 快速模板" size="small" style={{ marginBottom: 0 }}>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "8px",
-                  flexWrap: "wrap",
-                }}>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    setProjectData((prev) => ({
-                      ...prev,
-                      text: { enabled: true, config: {} },
-                      animation: { enabled: true, config: {} },
-                    }));
-                    message.info("已应用文本动画模板");
-                  }}>
-                  📝 文本动画模板
-                </Button>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    setProjectData((prev) => {
-                      const newData = { ...prev };
-                      Object.keys(newData).forEach((key) => {
-                        newData[key as keyof ProjectData].enabled = true;
-                      });
-                      return newData;
-                    });
-                    message.info("已应用全功能模板");
-                  }}>
-                  🎊 全功能模板
-                </Button>
-                <Button
-                  size="small"
-                  danger
-                  onClick={() => {
-                    setProjectData({
-                      text: { enabled: true, config: {} },
-                      audio: { enabled: false, config: {} },
-                      video: { enabled: false, config: {} },
-                      animation: { enabled: false, config: {} },
-                      effects: { enabled: false, config: {} },
-                      transition: { enabled: false, config: {} },
-                    });
-                    form.resetFields();
-                    message.info("已重置所有配置");
-                  }}>
-                  🔄 重置配置
-                </Button>
-              </div>
-            </Card>
+            ) : null}
           </div>
-        </Col>
-      </Row>
+        </div>
+      </Modal>
 
       {/* 结果预览模态框 */}
       <Modal
