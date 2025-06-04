@@ -1,9 +1,10 @@
 import os
 import uuid
+from typing import Dict, Any
+from typing import Optional, Literal
+
 import pymediainfo
 
-from typing import Optional, Literal
-from typing import Dict, Any
 
 class Crop_settings:
     """素材的裁剪设置, 各属性均在0-1之间, 注意素材的坐标原点在左上角"""

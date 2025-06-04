@@ -1,24 +1,25 @@
-import os
 import json
 import math
+import os
 from copy import deepcopy
-
 from typing import Optional, Literal, Union, overload
 from typing import Type, Dict, List, Any
 
-from . import util
 from . import exceptions
-from .template_mode import ImportedTrack, EditableTrack, ImportedMediaTrack, ImportedTextTrack, Shrink_mode, Extend_mode, import_track
-from .time_util import Timerange, tim, srt_tstamp
-from .local_materials import Video_material, Audio_material
-from .segment import Base_segment, Speed, Clip_settings
+from . import util
 from .audio_segment import Audio_segment, Audio_fade, Audio_effect
-from .video_segment import Video_segment, Sticker_segment, Segment_animations, Video_effect, Transition, Filter, BackgroundFilling
 from .effect_segment import Effect_segment, Filter_segment
-from .text_segment import Text_segment, Text_style, TextBubble
-from .track import Track_type, Base_track, Track
-
+from .local_materials import Video_material, Audio_material
 from .metadata import Video_scene_effect_type, Video_character_effect_type, Filter_type
+from .segment import Base_segment, Speed, Clip_settings
+from .template_mode import ImportedTrack, EditableTrack, ImportedMediaTrack, ImportedTextTrack, Shrink_mode, \
+    Extend_mode, import_track
+from .text_segment import Text_segment, Text_style, TextBubble
+from .time_util import Timerange, tim, srt_tstamp
+from .track import Track_type, Base_track, Track
+from .video_segment import Video_segment, Sticker_segment, Segment_animations, Video_effect, Transition, Filter, \
+    BackgroundFilling
+
 
 class Script_material:
     """草稿文件中的素材信息部分"""

@@ -611,6 +611,61 @@ const ApiDocs: React.FC = () => {
           </Space>
         </div>
       </Card>
+
+      {/* API文档页面（避免路由错误） */}
+      <div style={{ marginTop: '24px' }}>
+        <Title level={3}>认证相关</Title>
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <div>
+            <Tag color="green">POST</Tag>
+            <Text code>/api/auth/register</Text>
+            <Text type="secondary"> - 用户注册</Text>
+          </div>
+          <div>
+            <Tag color="green">POST</Tag>
+            <Text code>/api/auth/login</Text>
+            <Text type="secondary"> - 用户登录</Text>
+          </div>
+          <div>
+            <Tag color="green">POST</Tag>
+            <Text code>/api/auth/logout</Text>
+            <Text type="secondary"> - 用户登出</Text>
+          </div>
+          <div>
+            <Tag color="blue">GET</Tag>
+            <Text code>/api/auth/me</Text>
+            <Text type="secondary"> - 获取当前用户信息</Text>
+          </div>
+        </Space>
+
+        <Divider />
+
+        <Title level={3}>项目管理</Title>
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <div>
+            <Tag color="green">POST</Tag>
+            <Text code>/api/basic-project</Text>
+            <Text type="secondary"> - 创建基础项目</Text>
+          </div>
+          <div>
+            <Tag color="green">POST</Tag>
+            <Text code>/api/text-segment</Text>
+            <Text type="secondary"> - 创建文本片段</Text>
+          </div>
+          <div>
+            <Tag color="blue">GET</Tag>
+            <Text code>/api/projects</Text>
+            <Text type="secondary"> - 获取项目列表</Text>
+          </div>
+        </Space>
+
+        <Divider />
+
+        <Paragraph>
+          更多详细的API文档请查看：
+          <Text code>http://localhost:5000/openapi.yaml</Text>
+        </Paragraph>
+      </div>
     </div>
   );
 };

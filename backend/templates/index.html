@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pyJianYingDraft Web Service</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        .api-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+        .api-card {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+        }
+        .api-card:hover {
+            transform: translateY(-5px);
+        }
+        .api-card h3 {
+            margin: 0 0 10px 0;
+            color: #ffd700;
+        }
+        .api-card a {
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
+        .api-card a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            background: #28a745;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 pyJianYingDraft</h1>
+        <p class="subtitle">Django Web API Service</p>
+        <div class="status">✅ 服务运行正常</div>
+        
+        <div class="api-links">
+            <div class="api-card">
+                <h3>📚 API文档</h3>
+                <p>查看完整的API接口文档</p>
+                <a href="/api/openapi.yaml" target="_blank">OpenAPI规范</a>
+            </div>
+            
+            <div class="api-card">
+                <h3>🔐 管理后台</h3>
+                <p>管理用户和项目数据</p>
+                <a href="/admin/" target="_blank">Django Admin</a>
+            </div>
+            
+            <div class="api-card">
+                <h3>🚀 健康检查</h3>
+                <p>检查API服务状态</p>
+                <a href="/api/health/" target="_blank">Health Check</a>
+            </div>
+            
+            <div class="api-card">
+                <h3>📊 仪表盘</h3>
+                <p>查看项目统计数据</p>
+                <a href="/api/dashboard/" target="_blank">Dashboard</a>
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px; opacity: 0.8;">
+            <p>🔧 版本: v2.0.0 (Django)</p>
+            <p>📝 基于Django REST Framework构建的剪映草稿生成服务</p>
+        </div>
+    </div>
+</body>
+</html>

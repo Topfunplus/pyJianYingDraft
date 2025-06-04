@@ -3,16 +3,15 @@
 import json
 import uuid
 from copy import deepcopy
-
 from typing import Dict, Tuple, Any
 from typing import Union, Optional, Literal
 
-from .time_util import Timerange, tim
-from .segment import Clip_settings, Visual_segment
 from .animation import Segment_animations, Text_animation
-
 from .metadata import Font_type, Effect_meta
 from .metadata import Text_intro, Text_outro, Text_loop_anim
+from .segment import Clip_settings, Visual_segment
+from .time_util import Timerange, tim
+
 
 class Text_style:
     """字体样式类"""

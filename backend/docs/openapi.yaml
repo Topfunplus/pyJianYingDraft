@@ -1,0 +1,235 @@
+openapi: 3.0.3
+info:
+  title: pyJianYingDraft API
+  description: 剪映草稿生成Web服务API - Django版本
+  version: 2.0.0
+  contact:
+    name: pyJianYingDraft Team
+    url: https://github.com/example/pyJianYingDraft
+
+servers:
+  - url: http://localhost:8000
+    description: 开发服务器
+  - url: http://127.0.0.1:8000
+    description: 本地服务器
+
+paths:
+  /api/health/:
+    get:
+      summary: 健康检查
+      description: 检查API服务运行状态
+      tags:
+        - 系统
+      responses:
+        '200':
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  version:
+                    type: string
+
+  /api/basic-project/:
+    post:
+      summary: 创建基础项目
+      description: 创建一个基础的剪映草稿项目
+      tags:
+        - 项目管理
+      responses:
+        '200':
+          description: 项目创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/text-segment/:
+    post:
+      summary: 创建文本片段
+      description: 创建包含文本内容的草稿片段
+      tags:
+        - 文本处理
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  default: "这是一个文本测试"
+                duration:
+                  type: string
+                  default: "3s"
+                color:
+                  type: array
+                  items:
+                    type: number
+                  default: [1.0, 1.0, 0.0]
+                font:
+                  type: string
+                  default: "文轩体"
+      responses:
+        '200':
+          description: 文本片段创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/audio-segment/:
+    post:
+      summary: 创建音频片段
+      description: 创建包含音频内容的草稿片段
+      tags:
+        - 媒体处理
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                duration:
+                  type: string
+                  default: "5s"
+                volume:
+                  type: number
+                  default: 0.6
+                fade_in:
+                  type: string
+                  default: "1s"
+      responses:
+        '200':
+          description: 音频片段创建成功
+
+  /api/video-segment/:
+    post:
+      summary: 创建视频片段
+      description: 创建包含视频内容的草稿片段
+      tags:
+        - 媒体处理
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                duration:
+                  type: string
+                  default: "4.2s"
+      responses:
+        '200':
+          description: 视频片段创建成功
+
+  /api/comprehensive/:
+    post:
+      summary: 综合测试项目
+      description: 创建包含多种元素的综合测试项目
+      tags:
+        - 综合功能
+      responses:
+        '200':
+          description: 综合项目创建成功
+
+  /auth/register/:
+    post:
+      summary: 用户注册
+      description: 注册新用户账户
+      tags:
+        - 用户认证
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+                - password_confirm
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                password_confirm:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                nickname:
+                  type: string
+      responses:
+        '201':
+          description: 注册成功
+        '400':
+          description: 请求参数错误
+
+  /auth/login/:
+    post:
+      summary: 用户登录
+      description: 用户账户登录
+      tags:
+        - 用户认证
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: 登录成功
+        '401':
+          description: 认证失败
+
+components:
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+        errors:
+          type: object
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: 系统
+    description: 系统相关接口
+  - name: 项目管理
+    description: 项目管理相关接口
+  - name: 文本处理
+    description: 文本处理相关接口
+  - name: 媒体处理
+    description: 音视频处理相关接口
+  - name: 综合功能
+    description: 综合功能接口
+  - name: 用户认证
+    description: 用户认证相关接口

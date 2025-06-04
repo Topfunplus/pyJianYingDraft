@@ -4,8 +4,9 @@ import uuid
 from typing import Optional, Dict, List, Any, Union
 
 from .animation import Segment_animations
-from .time_util import Timerange, tim
 from .keyframe import Keyframe_list, Keyframe_property
+from .time_util import Timerange, tim
+
 
 class Base_segment:
     """片段基类"""

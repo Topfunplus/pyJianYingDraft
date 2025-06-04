@@ -2,11 +2,11 @@
 
 from typing import Union, Optional, List
 
-from .time_util import Timerange
+from .metadata import Video_scene_effect_type, Video_character_effect_type, Filter_type
 from .segment import Base_segment
+from .time_util import Timerange
 from .video_segment import Video_effect, Filter
 
-from .metadata import Video_scene_effect_type, Video_character_effect_type, Filter_type
 
 class Effect_segment(Base_segment):
     """放置在独立特效轨道上的特效片段"""

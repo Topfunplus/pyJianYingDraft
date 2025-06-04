@@ -15,8 +15,11 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   NotificationOutlined,
+  UserOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { Film, Cpu } from "lucide-react";
+import UserProfile from "./UserProfile";
 
 const { Header, Sider, Content } = AntLayout;
 const { Title, Text } = Typography;
@@ -43,6 +46,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       key: "/create",
       icon: <ProjectOutlined />,
       label: "开始创作",
+    },
+    {
+      key: "/projects",
+      icon: <ProjectOutlined />,
+      label: "项目管理",
+    },
+    {
+      key: "/users",
+      icon: <UserOutlined />,
+      label: "用户管理",
+    },
+    {
+      key: "/docs",
+      icon: <SettingOutlined />,
+      label: "API调试",
     },
   ];
 
@@ -103,6 +121,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               }
             )}
           </Space>
+
+          <UserProfile />
         </Header>
         <Content
           style={{

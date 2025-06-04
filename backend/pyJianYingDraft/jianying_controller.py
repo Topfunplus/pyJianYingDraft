@@ -1,14 +1,15 @@
 """剪映自动化控制，主要与自动导出有关"""
 
-import time
 import shutil
-import uiautomation as uia
-
+import time
 from enum import Enum
 from typing import Optional, Literal, Callable
 
+import uiautomation as uia
+
 from . import exceptions
 from .exceptions import AutomationError
+
 
 class Export_resolution(Enum):
     """导出分辨率"""

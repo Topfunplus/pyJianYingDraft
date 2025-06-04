@@ -45,6 +45,17 @@ const Dashboard: React.FC = () => {
     refetchInterval: 30000,
   });
 
+  // 获取仪表盘数据
+  const {
+    data: dashboardData,
+    isLoading: dashboardLoading,
+    error: dashboardError,
+  } = useQuery({
+    queryKey: ["dashboard-data"],
+    queryFn: apiService.getDashboardData,
+    refetchInterval: 30000,
+  });
+
   // API测试mutation
   const testMutation = useMutation({
     mutationFn: async (apiType: string) => {
@@ -86,7 +97,7 @@ const Dashboard: React.FC = () => {
     testMutation.mutate(actionType);
   };
 
-  const recentActivities = [
+  const recentActivities = dashboardData?.activities || [
     { title: "创建基础项目", time: "2分钟前", status: "success" },
     { title: "生成文本片段", time: "5分钟前", status: "success" },
     { title: "添加视频动画", time: "10分钟前", status: "processing" },
@@ -126,8 +137,54 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <Spin spinning={isLoading || testMutation.isPending}>
+    <Spin spinning={isLoading || testMutation.isPending || dashboardLoading}>
       <div>
+        {/* 统计卡片 */}
+        {dashboardData?.stats && (
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="总项目数"
+                  value={dashboardData.stats.total_projects}
+                  prefix={<ProjectOutlined />}
+                  valueStyle={{ color: "#1890ff" }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="已完成"
+                  value={dashboardData.stats.completed_projects}
+                  prefix={<CheckCircleOutlined />}
+                  valueStyle={{ color: "#52c41a" }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="进行中"
+                  value={dashboardData.stats.processing_projects}
+                  prefix={<ClockCircleOutlined />}
+                  valueStyle={{ color: "#faad14" }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="草稿"
+                  value={dashboardData.stats.draft_projects}
+                  prefix={<Activity size={14} />}
+                  valueStyle={{ color: "#fa541c" }}
+                />
+              </Card>
+            </Col>
+          </Row>
+        )}
+
         <div style={{ marginBottom: "24px" }}>
           <Title level={2}>
             <Space>

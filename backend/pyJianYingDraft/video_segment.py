@@ -5,19 +5,18 @@
 
 import uuid
 from copy import deepcopy
-
-from typing import Optional, Literal, Union, overload
 from typing import Dict, List, Tuple, Any
+from typing import Optional, Literal, Union
 
-from .time_util import tim, Timerange
-from .segment import Visual_segment, Clip_settings
-from .local_materials import Video_material
 from .animation import Segment_animations, Video_animation
-
+from .local_materials import Video_material
 from .metadata import Effect_meta, Effect_param_instance
-from .metadata import Mask_meta, Mask_type, Filter_type, Transition_type
 from .metadata import Intro_type, Outro_type, Group_animation_type
+from .metadata import Mask_meta, Mask_type, Filter_type, Transition_type
 from .metadata import Video_scene_effect_type, Video_character_effect_type
+from .segment import Visual_segment, Clip_settings
+from .time_util import tim, Timerange
+
 
 class Mask:
     """蒙版对象"""

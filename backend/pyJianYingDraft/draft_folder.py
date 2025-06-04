@@ -2,10 +2,10 @@
 
 import os
 import shutil
-
 from typing import List
 
 from .script_file import Script_file
+
 
 class Draft_folder:
     """管理一个文件夹及其内的一系列草稿"""

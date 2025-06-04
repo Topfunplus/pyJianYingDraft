@@ -5,17 +5,16 @@
 
 import uuid
 from copy import deepcopy
-
-from typing import Optional, Literal, Union
 from typing import Dict, List, Any
+from typing import Optional, Literal, Union
 
-from .time_util import tim, Timerange
-from .segment import Media_segment
-from .local_materials import Audio_material
 from .keyframe import Keyframe_property, Keyframe_list
-
-from .metadata import Effect_param_instance
+from .local_materials import Audio_material
 from .metadata import Audio_scene_effect_type, Tone_effect_type, Speech_to_song_type
+from .metadata import Effect_param_instance
+from .segment import Media_segment
+from .time_util import tim, Timerange
+
 
 class Audio_fade:
     """音频淡入淡出效果"""
