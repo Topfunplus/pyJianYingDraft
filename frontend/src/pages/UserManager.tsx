@@ -261,7 +261,6 @@ const UserManager: React.FC = () => {
     },
   ];
   const users = usersData?.data || [];
-  const stats = usersData?.stats || {};
 
   // 如果没有用户管理权限，显示无权限页面
   if (!canManageUsers) {

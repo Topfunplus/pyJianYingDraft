@@ -25,18 +25,18 @@ class RegisterView(APIView):
 
     def post(self, request):
         logger.info(f"📝 注册请求数据: {request.data}")
-        
+
         # 处理字段名映射 - 支持前端发送的 confirmPassword
         data = request.data.copy()
         if 'confirmPassword' in data and 'password_confirm' not in data:
             data['confirmPassword'] = data['confirmPassword']
-        
+
         serializer = UserRegistrationSerializer(data=data)
         if serializer.is_valid():
             user = serializer.save()
             refresh = RefreshToken.for_user(user)
             logger.info(f"✅ 新用户注册成功: {user.username} (ID: {user.id})")
-            
+
             return Response({
                 'success': True,
                 'message': '注册成功',
@@ -46,7 +46,7 @@ class RegisterView(APIView):
                     'refresh': str(refresh)
                 }
             }, status=status.HTTP_201_CREATED)
-        
+
         logger.error(f"❌ 注册失败，验证错误: {serializer.errors}")
         return Response({
             'success': False,
@@ -54,24 +54,25 @@ class RegisterView(APIView):
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+
 class LoginView(APIView):
     """用户登录"""
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         logger.info(f"📝 登录请求数据: {request.data}")
-        
+
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            
+
             # 更新最后登录IP
             user.last_login_ip = self.get_client_ip(request)
             user.save(update_fields=['last_login_ip'])
-            
+
             refresh = RefreshToken.for_user(user)
             logger.info(f"✅ 用户登录成功: {user.username} (ID: {user.id}) - 管理员: {user.is_admin or user.is_superuser}")
-            
+
             return Response({
                 'success': True,
                 'message': '登录成功',
@@ -81,7 +82,7 @@ class LoginView(APIView):
                     'refresh': str(refresh)
                 }
             })
-        
+
         logger.error(f"❌ 登录失败，验证错误: {serializer.errors}")
         return Response({
             'success': False,
@@ -128,7 +129,7 @@ class UserProfileView(APIView):
         """获取当前用户信息"""
         user_data = UserSerializer(request.user).data
         logger.info(f"📝 用户 {request.user.username} 获取资料，权限: {user_data.get('permissions', {})}")
-        
+
         return Response({
             'success': True,
             'data': user_data
@@ -180,6 +181,8 @@ class ChangePasswordView(APIView):
 class UserListView(generics.ListCreateAPIView):
     """用户列表管理（管理员功能）"""
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
 
     def get_serializer_class(self):
         # POST请求使用管理序列化器，GET请求使用普通序列化器
@@ -195,35 +198,44 @@ class UserListView(generics.ListCreateAPIView):
         return User.objects.filter(id=self.request.user.id)
 
     def get_permissions(self):
-        # 创建用户需要管理员权限
+        # 获取用户列表需要登录，创建用户需要管理员权限
         if self.request.method == 'POST':
             return [permissions.IsAuthenticated()]
         return super().get_permissions()
-    
+
     def list(self, request, *args, **kwargs):
         """重写列表方法，返回格式化的用户列表"""
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        
+
+        logger.info(f"📋 用户 {request.user.username} 获取用户列表，数量: {queryset.count()}")
+
         return Response({
             'success': True,
             'data': serializer.data,
             'total': queryset.count()
         })
-    
+
     def create(self, request, *args, **kwargs):
         """重写创建方法，返回格式化响应"""
+        # 检查用户权限
+        if not (request.user.is_admin or request.user.is_superuser):
+            return Response({
+                'success': False,
+                'message': '权限不足，只有管理员可以创建用户'
+            }, status=status.HTTP_403_FORBIDDEN)
+
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            logger.info(f"✅ 管理员创建用户成功: {user.username} (ID: {user.id})")
-            
+            logger.info(f"✅ 管理员 {request.user.username} 创建用户成功: {user.username} (ID: {user.id})")
+
             return Response({
                 'success': True,
                 'message': '用户创建成功',
                 'data': UserSerializer(user).data
             }, status=status.HTTP_201_CREATED)
-        
+
         logger.error(f"❌ 用户创建失败，验证错误: {serializer.errors}")
         return Response({
             'success': False,
@@ -231,60 +243,94 @@ class UserListView(generics.ListCreateAPIView):
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     """用户详情管理"""
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+    queryset = User.objects.all()
 
     def get_queryset(self):
         # 只有管理员可以管理所有用户，普通用户只能管理自己
         if self.request.user.is_admin or self.request.user.is_superuser:
             return User.objects.all()
         return User.objects.filter(id=self.request.user.id)
-    
+
+    def get_serializer_class(self):
+        # 更新操作使用管理序列化器
+        if self.request.method in ['PUT', 'PATCH']:
+            from .serializers import UserManagementSerializer
+            return UserManagementSerializer
+        return UserSerializer
+
     def retrieve(self, request, *args, **kwargs):
         """重写详情方法，返回格式化的用户详情"""
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        
+
+        logger.info(f"📋 用户 {request.user.username} 获取用户详情: {instance.username}")
+
         return Response({
             'success': True,
             'data': serializer.data
         })
-    
+
     def update(self, request, *args, **kwargs):
         """重写更新方法，返回格式化响应"""
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+
+        # 检查权限：管理员可以修改任何用户，普通用户只能修改自己
+        if not (request.user.is_admin or request.user.is_superuser or instance.id == request.user.id):
+            return Response({
+                'success': False,
+                'message': '权限不足，无法修改该用户信息'
+            }, status=status.HTTP_403_FORBIDDEN)
+
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        
+
         if serializer.is_valid():
             user = serializer.save()
-            logger.info(f"✅ 用户信息更新成功: {user.username} (ID: {user.id})")
-            
+            logger.info(f"✅ 用户信息更新成功: {user.username} (ID: {user.id}) by {request.user.username}")
+
             return Response({
                 'success': True,
                 'message': '用户信息更新成功',
-                'data': serializer.data
+                'data': UserSerializer(user).data
             })
-        
+
         return Response({
             'success': False,
             'message': '用户信息更新失败',
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def destroy(self, request, *args, **kwargs):
         """重写删除方法，返回格式化响应"""
         instance = self.get_object()
+
+        # 检查权限：只有管理员可以删除用户，且不能删除自己
+        if not (request.user.is_admin or request.user.is_superuser):
+            return Response({
+                'success': False,
+                'message': '权限不足，只有管理员可以删除用户'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        if instance.id == request.user.id:
+            return Response({
+                'success': False,
+                'message': '不能删除自己的账户'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         username = instance.username
         instance.delete()
-        logger.info(f"✅ 用户删除成功: {username}")
-        
+        logger.info(f"✅ 管理员 {request.user.username} 删除用户成功: {username}")
+
         return Response({
             'success': True,
             'message': '用户删除成功'
         })
+
 
 class UserManagementView(APIView):
     """用户管理视图 - 管理员功能"""
@@ -459,7 +505,7 @@ class UserManagementDetailView(APIView):
 def user_stats(request):
     """用户统计信息"""
     user = request.user
-    
+
     # 用户项目统计
     if user.is_admin or user.is_superuser:
         # 管理员可以看到所有统计
@@ -469,7 +515,7 @@ def user_stats(request):
             processing=Count('id', filter=Q(status='processing')),
             draft=Count('id', filter=Q(status='draft'))
         )
-        
+
         recent_projects = Project.objects.filter(
             created_at__gte=datetime.now() - timedelta(days=7)
         ).count()
@@ -481,12 +527,12 @@ def user_stats(request):
             processing=Count('id', filter=Q(status='processing')),
             draft=Count('id', filter=Q(status='draft'))
         )
-        
+
         recent_projects = Project.objects.filter(
             user=user,
             created_at__gte=datetime.now() - timedelta(days=7)
         ).count()
-    
+
     return Response({
         'success': True,
         'data': {

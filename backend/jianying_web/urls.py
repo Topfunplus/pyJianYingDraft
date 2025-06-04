@@ -10,10 +10,9 @@ def health_check(request):
         'version': '2.0.0'
     })
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('health/', health_check, name='health'),
-    path('api/', include('api.urls')),
-    path('api/auth/', include('users.urls')),
-    path('api/users/', include('users.management_urls')),  # 用户管理路由
+    path('api/', include('api.urls')),  # 所有API都通过这个入口
 ]
