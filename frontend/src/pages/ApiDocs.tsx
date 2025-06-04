@@ -153,20 +153,6 @@ const ApiDocs: React.FC = () => {
           } 
         }
       }
-    },
-    '/api/download-from-url': {
-      path: '/api/download-from-url',
-      method: 'POST',
-      title: '网络下载文件',
-      description: '从网址下载音视频文件到服务器',
-      parameters: [
-        { name: 'url', type: 'string', default: 'https://www.w3schools.com/html/mov_bbb.mp4', description: '文件网址' },
-        { name: 'type', type: 'string', options: ['audio', 'video'], default: 'video', description: '文件类型' }
-      ],
-      example: {
-        url: 'https://www.w3schools.com/html/mov_bbb.mp4',
-        type: 'video'
-      }
     }
   };
 

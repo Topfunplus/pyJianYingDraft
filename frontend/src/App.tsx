@@ -83,13 +83,6 @@ const App: React.FC = () => {
                   </Layout>
                 </ProtectedRoute>
               } />
-                <Route path="/docs" element={
-                <ProtectedRoute>
-                  <Layout>
-                    <ApiDocs />
-                  </Layout>
-                </ProtectedRoute>
-              } />
               
               <Route path="/api-documentation" element={
                 <ProtectedRoute>

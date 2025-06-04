@@ -14,8 +14,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   UserOutlined,
-  SettingOutlined,
-  FileTextOutlined,
 } from "@ant-design/icons";
 import { Film } from "lucide-react";
 import { usePermissions } from "@/contexts/PermissionContext";
@@ -55,11 +53,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       icon: <ProjectOutlined />,
       label: "项目管理",
     },
-    {
-      key: "/api-documentation",
-      icon: <FileTextOutlined />,
-      label: "API文档",
-    },
   ];
   // 管理员菜单项
   const adminMenuItems = [
@@ -67,21 +60,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       key: "/users",
       icon: <UserOutlined />,
       label: "用户管理",
-      requiresPermission: 'can_manage_users' as const,
-    },
-    {
-      key: "/docs",
-      icon: <SettingOutlined />,
-      label: "API调试",
-      requiresPermission: 'can_access_api_debug' as const,
+      requiresPermission: "can_manage_users" as const,
     },
   ];
 
   // 根据权限过滤菜单项
   const getFilteredMenuItems = () => {
     const menuItems = [...baseMenuItems];
-    
-    adminMenuItems.forEach(item => {
+
+    adminMenuItems.forEach((item) => {
       if (hasPermission(item.requiresPermission)) {
         menuItems.push({
           key: item.key,
@@ -90,7 +77,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         });
       }
     });
-    
+
     return menuItems;
   };
 

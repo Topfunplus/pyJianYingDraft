@@ -342,7 +342,6 @@ def dashboard_data(request):
                         'is_admin': user.is_admin or user.is_superuser,
                         'is_superuser': user.is_superuser,
                         'can_manage_users': user.is_admin or user.is_superuser,
-                        'can_access_api_debug': user.is_admin or user.is_superuser,
                         'can_view_all_projects': user.is_admin or user.is_superuser
                     }
                 }
@@ -362,7 +361,6 @@ def dashboard_data(request):
                         'is_admin': user.is_admin or user.is_superuser,
                         'is_superuser': user.is_superuser,
                         'can_manage_users': user.is_admin or user.is_superuser,
-                        'can_access_api_debug': user.is_admin or user.is_superuser,
                         'can_view_all_projects': user.is_admin or user.is_superuser
                     }
                 }

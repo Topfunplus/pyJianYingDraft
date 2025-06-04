@@ -1,4 +1,3 @@
-from .models import Project
 import pyJianYingDraft as draft
 import logging
 import os
@@ -6,15 +5,12 @@ import sys
 from functools import wraps
 import json
 from datetime import datetime
-from config.settings import get_asset_path
 from rest_framework import status
 from rest_framework.response import Response
 
 # 添加项目根目录到路径
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, project_root)
-
-
 logger = logging.getLogger('api')
 
 
@@ -60,7 +56,8 @@ def save_draft_to_file(draft_content, filename=None):
         filename = f"draft_{timestamp}.json"
 
     # 使用Django settings中的配置
-    web_output_dir = getattr(settings, 'WEB_OUTPUT_DIR', os.path.join(project_root, "web_outputs"))
+    web_output_dir = getattr(settings, 'WEB_OUTPUT_DIR',
+                             os.path.join(project_root, "web_outputs"))
     os.makedirs(web_output_dir, exist_ok=True)
     file_path = os.path.join(web_output_dir, filename)
 
@@ -87,35 +84,35 @@ def get_output_path(project_name):
 
 def create_and_save_script(script, template_name, success_message, additional_data=None):
     """序列化草稿脚本对象并返回，不保存到本地
-    
+
     Args:
         script: 草稿脚本对象
         template_name: 模板名称(仅用于标识，不会创建实际的文件)
         success_message: 成功消息
         additional_data: 附加数据
-        
+
     Returns:
         Response: API响应，包含序列化的脚本内容
     """
     # 将Script_file对象序列化为JSON字符串，然后解析为字典
     script_json = json.loads(script.dumps())
-    
+
     # 准备项目信息
     project_info = {
         "name": template_name
     }
-    
+
     # 构建响应
     response_data = {
         "template_name": template_name,
         "project_info": project_info,
         "draft_content": script_json  # 直接返回序列化后的草稿内容
     }
-    
+
     if additional_data:
         # 确保additional_data不覆盖draft_content
         if isinstance(additional_data, dict) and "draft_content" in additional_data:
             additional_data.pop("draft_content")
         response_data.update(additional_data)
-    
+
     return create_success_response(success_message, **response_data)
