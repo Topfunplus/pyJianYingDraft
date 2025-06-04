@@ -20,6 +20,7 @@ import {
   Upload,
   Steps,
   Divider,
+  Tabs,
 } from "antd";
 import { useMutation } from "@tanstack/react-query";
 import {
@@ -984,7 +985,8 @@ const CreateProject: React.FC = () => {
         onCancel={handleConfigModalClose}
         width={800}
         footer={null}
-        destroyOnClose>
+        destroyOnHidden>
+        
         <div style={{ marginBottom: 24 }}>
           <Steps
             current={currentStep}
@@ -1105,7 +1107,7 @@ const CreateProject: React.FC = () => {
           </Button>,
         ]}
         width={900}
-        destroyOnClose>
+        destroyOnHidden>
         {generatedResult ? (
           <div>
             <Alert
@@ -1262,15 +1264,10 @@ const CreateProject: React.FC = () => {
                                               fontSize: "12px",
                                               padding: "2px 6px",
                                               borderRadius: "4px",
-                                              backgroundColor:
-                                                asset.source === "upload"
-                                                  ? "#52c41a"
-                                                  : "#fa8c16",
+                                              backgroundColor: "#52c41a",
                                               color: "white",
                                             }}>
-                                            {asset.source === "upload"
-                                              ? "本地"
-                                              : "网络"}
+                                            本地
                                           </span>
                                         </Space>
                                       }
@@ -1292,11 +1289,7 @@ const CreateProject: React.FC = () => {
                                               color: "#666",
                                               marginTop: "4px",
                                             }}>
-                                            来源:{" "}
-                                            {asset.source === "upload"
-                                              ? "用户上传"
-                                              : "网络下载"}
-                                            的
+                                            来源: 用户上传的
                                             {asset.type === "audio"
                                               ? "音频"
                                               : "视频"}
