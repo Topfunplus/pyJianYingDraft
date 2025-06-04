@@ -37,14 +37,16 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
     queryFn: apiService.getDashboardData,
     enabled: apiService.isAuthenticated(),
     staleTime: 5 * 60 * 1000,
-  });
-  // 从多个来源提取权限信息
+  });  // 从多个来源提取权限信息
   const getPermissions = (): UserPermissions | null => {
     // 1. 首先从用户资料中获取权限 (来自 /api/me)
     if (currentUser?.permissions) {
       return {
         can_manage_users: currentUser.permissions.can_manage_users || false,
         can_access_api_debug: currentUser.permissions.can_access_api_debug || false,
+        is_admin: currentUser.permissions.is_admin || false,
+        is_superuser: currentUser.permissions.is_superuser || false,
+        can_view_all_projects: currentUser.permissions.can_view_all_projects || false,
       };
     }
 
@@ -53,6 +55,9 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
       return {
         can_manage_users: dashboardData.user_info.permissions.can_manage_users || false,
         can_access_api_debug: dashboardData.user_info.permissions.can_access_api_debug || false,
+        is_admin: dashboardData.user_info.permissions.is_admin || false,
+        is_superuser: dashboardData.user_info.permissions.is_superuser || false,
+        can_view_all_projects: dashboardData.user_info.permissions.can_view_all_projects || false,
       };
     }
 
@@ -60,6 +65,9 @@ export const PermissionProvider: React.FC<PermissionProviderProps> = ({ children
     return {
       can_manage_users: false,
       can_access_api_debug: false,
+      is_admin: false,
+      is_superuser: false,
+      can_view_all_projects: false,
     };
   };
 

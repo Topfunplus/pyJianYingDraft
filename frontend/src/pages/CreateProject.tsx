@@ -99,13 +99,6 @@ const CreateProject: React.FC = () => {
     }));
   };
 
-  const handleConfigChange = (section: keyof ProjectData, config: any) => {
-    setProjectData(prev => ({
-      ...prev,
-      [section]: { ...prev[section], config }
-    }));
-  };
-
   const handleGenerate = () => {
     try {
       console.log('开始生成项目...');
@@ -126,15 +119,12 @@ const CreateProject: React.FC = () => {
         };
       });
 
-      console.log('最终配置:', config);
-      
       // 检查是否有启用的组件
       const hasEnabledComponents = Object.values(config).some((item: any) => item.enabled);
       if (!hasEnabledComponents) {
         message.warning('请至少启用一个组件');
         return;
       }
-
       generateMutation.mutate(config);
     } catch (error) {
       console.error('配置生成失败:', error);

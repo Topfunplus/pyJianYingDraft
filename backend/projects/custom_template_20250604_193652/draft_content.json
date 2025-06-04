@@ -96,7 +96,7 @@
         "text_templates": [],
         "texts": [
             {
-                "id": "39a59d976fb94eef8a1632079d7ee3e4",
+                "id": "9cb8d02c728b42dfa9fec24c8ae8e4aa",
                 "content": "{\"styles\": [{\"fill\": {\"alpha\": 1.0, \"content\": {\"render_type\": \"solid\", \"solid\": {\"alpha\": 1.0, \"color\": [1, 1, 1]}}}, \"range\": [0, 8], \"size\": 8.0, \"bold\": false, \"italic\": false, \"underline\": false, \"strokes\": [], \"font\": {\"id\": \"7290445778273702455\", \"path\": \"C:/文轩体.ttf\"}}], \"text\": \"欢迎使用剪映助手\"}",
                 "typesetting": 0,
                 "alignment": 0,
@@ -130,7 +130,7 @@
         {
             "attribute": 0,
             "flag": 0,
-            "id": "fa79039e3bda479f88d31466284d38df",
+            "id": "6542c0205128405ba2756d0ac5d7e96b",
             "is_default_name": false,
             "name": "text",
             "segments": [
@@ -147,8 +147,8 @@
                     "track_attribute": 0,
                     "track_render_index": 0,
                     "visible": true,
-                    "id": "8207c969d11449bfbfdeabe44e8e7423",
-                    "material_id": "39a59d976fb94eef8a1632079d7ee3e4",
+                    "id": "92f514473d43493b8edda08311ac8973",
+                    "material_id": "9cb8d02c728b42dfa9fec24c8ae8e4aa",
                     "target_timerange": {
                         "start": 0,
                         "duration": 3000000
@@ -159,7 +159,7 @@
                     "speed": 1.0,
                     "volume": 1.0,
                     "extra_material_refs": [
-                        "67491d21a1824dc0817a7c2d3145413c"
+                        "530e61b28bcc46b890b13de725e34c49"
                     ],
                     "clip": {
                         "alpha": 1.0,

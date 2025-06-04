@@ -74,12 +74,9 @@ def text_segment(request):
     duration = data.get('duration', '3s')
     color = data.get('color', [1.0, 1.0, 0.0])
     font = data.get('font', '文轩体')
-
-    logger.info(f"📝 开始创建文本片段 - 文本:{text}, 时长:{duration}, 颜色:{color}")
-
+    logger.info(f"📝 开始创建文本片段模板 - 文本:{text}, 时长:{duration}, 颜色:{color}")
     script = create_basic_script()
     script.add_track(draft.Track_type.text)
-
     text_segment = draft.Text_segment(
         text, trange("0s", duration),
         font=getattr(draft.Font_type, font, draft.Font_type.文轩体),
@@ -87,22 +84,10 @@ def text_segment(request):
         clip_settings=draft.Clip_settings(transform_y=-0.8)
     )
     script.add_segment(text_segment)
-
-    # 保存项目到数据库
-    project = Project.objects.create(
-        user=request.user,
-        name=f'文本片段_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
-        type='text-segment',
-        status='completed',
-        draft_content=script.to_dict() if hasattr(script, 'to_dict') else {},
-        output_path="/mock/text_segment"
-    )
-
-    return create_success_response(
-        "文本片段创建成功",
-        output_path="/mock/text_segment",
-        text_info={"text": text, "duration": duration, "color": color, "font": font},
-        project_info={"id": project.id, "name": project.name}
+    return create_and_save_script(
+        script,
+        f"text_template_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "文本模板创建成功"
     )
 
 
@@ -116,9 +101,12 @@ def text_animation(request):
     duration = data.get('duration', '3s')
     animation = data.get('animation', '故障闪动')
     animation_duration = data.get('animation_duration', '1s')
-    logger.info(f"📝🎭 开始创建文本动画 - 文本:{text}, 时长:{duration}, 动画:{animation}")
+
+    logger.info(f"📝🎭 开始创建文本动画模板 - 文本:{text}, 时长:{duration}, 动画:{animation}")
+
     script = create_basic_script()
     script.add_track(draft.Track_type.text)
+
     text_segment = draft.Text_segment(
         text, trange("0s", duration),
         font=draft.Font_type.文轩体,
@@ -127,10 +115,11 @@ def text_animation(request):
     animation_type = getattr(draft.Text_outro, animation, draft.Text_outro.故障闪动)
     text_segment.add_animation(animation_type, duration=tim(animation_duration))
     script.add_segment(text_segment)
-    return create_success_response(
-        "文本动画创建成功",
-        output_path="/mock/text_animation",
-        animation_info={"text": text, "duration": duration, "animation": animation, "animation_duration": animation_duration}
+
+    return create_and_save_script(
+        script,
+        f"text_animation_template_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "文本动画模板创建成功"
     )
 
 
@@ -146,7 +135,7 @@ def text_effects(request):
     bubble_resource_id = data.get('bubble_resource_id', '6742029398926430728')
     effect_id = data.get('effect_id', '7296357486490144036')
 
-    logger.info(f"✨ 开始创建文本特效 - 文本:{text}, 时长:{duration}")
+    logger.info(f"✨ 开始创建文本特效模板 - 文本:{text}, 时长:{duration}")
 
     script = create_basic_script()
     script.add_track(draft.Track_type.text)
@@ -161,10 +150,10 @@ def text_effects(request):
     text_segment.add_effect(effect_id)
     script.add_segment(text_segment)
 
-    return create_success_response(
-        "文本特效创建成功",
-        output_path="/mock/text_effects",
-        effect_info={"text": text, "duration": duration, "bubble_id": bubble_id, "effect_id": effect_id}
+    return create_and_save_script(
+        script,
+        f"text_effects_template_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "文本特效模板创建成功"
     )
 
 
@@ -177,21 +166,16 @@ def audio_segment(request):
     duration = data.get('duration', '5s')
     volume = data.get('volume', 0.6)
     fade_in = data.get('fade_in', '1s')
-
-    logger.info(f"🎵 开始创建音频片段 - 时长:{duration}, 音量:{volume}, 淡入:{fade_in}")
-
     script = create_basic_script()
     script.add_track(draft.Track_type.audio)
-
     audio_material = draft.Audio_material(get_asset_path('audio.mp3'))
     audio_segment = draft.Audio_segment(audio_material, trange("0s", duration), volume=volume)
     audio_segment.add_fade(fade_in, "0s")
     script.add_segment(audio_segment)
-
-    return create_success_response(
-        "音频片段创建成功",
-        output_path="/mock/audio_segment",
-        audio_info={"duration": duration, "volume": volume, "fade_in": fade_in}
+    return create_and_save_script(
+        script,
+        f"audio_template_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "音频模板创建成功"
     )
 
 
@@ -203,7 +187,7 @@ def video_segment(request):
     data = request.data
     duration = data.get('duration', '4.2s')
 
-    logger.info(f"🎬 开始创建视频片段 - 时长:{duration}")
+    logger.info(f"🎬 开始创建视频模板 - 时长:{duration}")
 
     script = create_basic_script()
     script.add_track(draft.Track_type.video)
@@ -212,10 +196,10 @@ def video_segment(request):
     video_segment = draft.Video_segment(video_material, trange("0s", duration))
     script.add_segment(video_segment)
 
-    return create_success_response(
-        "视频片段创建成功",
-        output_path="/mock/video_segment",
-        video_info={"duration": duration}
+    return create_and_save_script(
+        script,
+        f"video_template_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "视频模板创建成功"
     )
 
 
@@ -228,7 +212,7 @@ def video_animation(request):
     duration = data.get('duration', '4.2s')
     animation = data.get('animation', '斜切')
 
-    logger.info(f"🎭 开始创建视频动画 - 时长:{duration}, 动画:{animation}")
+    logger.info(f"🎭 开始创建视频动画模板 - 时长:{duration}, 动画:{animation}")
 
     script = create_basic_script()
     script.add_track(draft.Track_type.video)
@@ -240,10 +224,10 @@ def video_animation(request):
     video_segment.add_animation(animation_type)
     script.add_segment(video_segment)
 
-    return create_success_response(
-        "视频动画创建成功",
-        output_path="/mock/video_animation",
-        animation_info={"duration": duration, "animation": animation}
+    return create_and_save_script(
+        script,
+        f"video_animation_template_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "视频动画模板创建成功"
     )
 
 
@@ -257,7 +241,7 @@ def transition(request):
     segment1_duration = data.get('segment1_duration', '2s')
     segment2_duration = data.get('segment2_duration', '2s')
 
-    logger.info(f"🔄 开始创建转场效果 - 转场:{transition_type}")
+    logger.info(f"🔄 开始创建转场效果模板 - 转场:{transition_type}")
 
     script = create_basic_script()
     script.add_track(draft.Track_type.video)
@@ -273,10 +257,10 @@ def transition(request):
 
     script.add_segment(video_segment1).add_segment(video_segment2)
 
-    return create_success_response(
-        "转场效果创建成功",
-        output_path="/mock/transition",
-        transition_info={"transition": transition_type, "segment1_duration": segment1_duration, "segment2_duration": segment2_duration}
+    return create_and_save_script(
+        script,
+        f"transition_template_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "转场效果模板创建成功"
     )
 
 
@@ -290,7 +274,7 @@ def background_filling(request):
     blur_type = data.get('blur_type', 'blur')
     blur_intensity = data.get('blur_intensity', 0.0625)
 
-    logger.info(f"🌈 开始创建背景填充 - 时长:{duration}, 模糊强度:{blur_intensity}")
+    logger.info(f"🌈 开始创建背景填充模板 - 时长:{duration}, 模糊强度:{blur_intensity}")
 
     script = create_basic_script()
     script.add_track(draft.Track_type.video)
@@ -300,10 +284,10 @@ def background_filling(request):
     gif_segment.add_background_filling(blur_type, blur_intensity)
     script.add_segment(gif_segment)
 
-    return create_success_response(
-        "背景填充创建成功",
-        output_path="/mock/background_filling",
-        background_info={"duration": duration, "blur_type": blur_type, "blur_intensity": blur_intensity}
+    return create_and_save_script(
+        script,
+        f"background_filling_template_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "背景填充模板创建成功"
     )
 
 # 添加权限装饰器到现有视图
@@ -475,12 +459,9 @@ def comprehensive(request):
     script.add_segment(audio_segment).add_segment(video_segment).add_segment(gif_segment).add_segment(text_segment)
 
     return create_and_save_script(
-        script, "comprehensive", "综合项目创建成功",
-        {"project_info": {
-            "tracks": ["audio", "video", "text"],
-            "segments": ["audio", "video", "gif", "text"],
-            "effects": ["fade", "animation", "transition", "background_filling", "text_effects"]
-        }}
+        script,
+        f"comprehensive_template_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "综合项目创建成功"
     )
 
 
@@ -528,119 +509,7 @@ def comprehensive_create(request):
         script.add_segment(video_segment)
 
     return create_and_save_script(
-        script, "comprehensive_create", "综合创作项目创建成功",
-        {"config": data, "project_type": "comprehensive_create"}
+        script,
+        f"custom_template_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "综合创作项目创建成功"
     )
-
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def get_projects(request):
-    """获取项目列表API - 兼容旧接口"""
-    return Response({
-        "success": True,
-        "data": [],
-        "stats": {"total": 0, "completed": 0, "pending": 0},
-        "total": 0
-    })
-
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def get_dashboard_data(request):
-    """获取仪表盘数据API - 兼容旧接口"""
-    return Response({
-        "success": True,
-        "stats": {"total": 0, "completed": 0, "pending": 0},
-        "activities": []
-    })
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@api_error_handler
-def download_from_url(request):
-    """从URL下载API"""
-    data = request.data
-    url = data.get('url', '')
-
-    if not url:
-        return create_error_response("URL不能为空")
-
-    logger.info(f"📥 收到下载请求: {url}")
-
-    return create_success_response(
-        "下载功能开发中",
-        data={"url": url, "status": "pending"}
-    )
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@api_error_handler
-def select_project_dir(request):
-    """选择项目目录API"""
-    data = request.data
-    project_dir = data.get('project_dir', '')
-
-    if not project_dir:
-        return create_error_response("项目目录不能为空")
-
-    logger.info(f"📁 项目目录设置: {project_dir}")
-
-    return create_success_response(
-        "项目目录设置成功",
-        data={"project_dir": project_dir}
-    )
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@api_error_handler
-def download_patch_simple(request):
-    """简单下载补丁API"""
-    data = request.data
-    logger.info("📦 执行简单下载补丁")
-
-    return create_success_response(
-        "下载补丁功能开发中",
-        data=data
-    )
-
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def openapi_spec(request):
-    """返回OpenAPI规范文档"""
-    docs_path = os.path.join(settings.BASE_DIR, 'docs', 'openapi.yaml')
-    if os.path.exists(docs_path):
-        return FileResponse(open(docs_path, 'rb'), content_type='text/yaml')
-    else:
-        return HttpResponse("OpenAPI文档未找到", status=404)
-
-
-# 添加统计相关API
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_project_stats(request):
-    """获取项目统计信息"""
-    user = request.user
-    
-    try:
-        stats = Project.objects.filter(user=user).aggregate(
-            total_projects=Count('id'),
-            completed_projects=Count('id', filter=Q(status='completed')),
-            processing_projects=Count('id', filter=Q(status='processing')),
-            draft_projects=Count('id', filter=Q(status='draft'))
-        )
-        
-        return Response({
-            'success': True,
-            'data': stats
-        })
-    except Exception as e:
-        logger.error(f"获取统计信息失败: {e}")
-        return Response({
-            'success': True,
-            'data': {'total_projects': 0, 'completed_projects': 0, 'processing_projects': 0, 'draft_projects': 0}
-        })

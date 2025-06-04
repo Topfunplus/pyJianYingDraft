@@ -11,6 +11,7 @@ import ProjectManager from "@/pages/ProjectManager";
 import UserManager from "@/pages/UserManager";
 import Login from "@/pages/Login";
 import ApiDocs from "@/pages/ApiDocs";
+import ApiDocumentation from "@/pages/ApiDocumentation";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import "./App.css";
 
@@ -82,11 +83,18 @@ const App: React.FC = () => {
                   </Layout>
                 </ProtectedRoute>
               } />
-              
-              <Route path="/docs" element={
+                <Route path="/docs" element={
                 <ProtectedRoute>
                   <Layout>
                     <ApiDocs />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/api-documentation" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ApiDocumentation />
                   </Layout>
                 </ProtectedRoute>
               } />

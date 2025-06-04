@@ -15,6 +15,7 @@ import {
   MenuUnfoldOutlined,
   UserOutlined,
   SettingOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import { Film } from "lucide-react";
 import { usePermissions } from "@/contexts/PermissionContext";
@@ -37,7 +38,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   // 获取权限信息
   const { hasPermission } = usePermissions();
-
   // 基础菜单项
   const baseMenuItems = [
     {
@@ -54,6 +54,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       key: "/projects",
       icon: <ProjectOutlined />,
       label: "项目管理",
+    },
+    {
+      key: "/api-documentation",
+      icon: <FileTextOutlined />,
+      label: "API文档",
     },
   ];
   // 管理员菜单项
