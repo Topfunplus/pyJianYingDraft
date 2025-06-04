@@ -316,22 +316,34 @@ def dashboard_data(request):
     user = request.user
 
     try:
-        # 项目统计
-        project_stats = Project.objects.filter(user=user).aggregate(
-            total_projects=Count('id'),
-            completed_projects=Count('id', filter=Q(status='completed')),
-            processing_projects=Count('id', filter=Q(status='processing')),
-            draft_projects=Count('id', filter=Q(status='draft'))
-        )
+        # 根据用户权限显示不同的项目统计
+        if user.is_admin or user.is_superuser:
+            # 管理员可以看到所有项目统计
+            project_stats = Project.objects.aggregate(
+                total_projects=Count('id'),
+                completed_projects=Count('id', filter=Q(status='completed')),
+                processing_projects=Count('id', filter=Q(status='processing')),
+                draft_projects=Count('id', filter=Q(status='draft'))
+            )
+            recent_projects = Project.objects.order_by('-created_at')[:5]
+        else:
+            # 普通用户只能看到自己的项目统计
+            project_stats = Project.objects.filter(user=user).aggregate(
+                total_projects=Count('id'),
+                completed_projects=Count('id', filter=Q(status='completed')),
+                processing_projects=Count('id', filter=Q(status='processing')),
+                draft_projects=Count('id', filter=Q(status='draft'))
+            )
+            recent_projects = Project.objects.filter(user=user).order_by('-created_at')[:5]
 
         # 最近活动
-        recent_projects = Project.objects.filter(user=user).order_by('-created_at')[:5]
         activities = []
         for project in recent_projects:
             activities.append({
                 'title': f'创建项目: {project.name}',
                 'time': project.created_at.strftime('%Y-%m-%d %H:%M'),
-                'status': 'success'
+                'status': 'success',
+                'user': project.user.username if user.is_admin or user.is_superuser else None
             })
 
         return Response({
@@ -342,7 +354,13 @@ def dashboard_data(request):
                 'user_info': {
                     'username': user.username,
                     'nickname': getattr(user, 'nickname', user.username),
-                    'is_admin': getattr(user, 'is_admin', False)
+                    'permissions': {
+                        'is_admin': user.is_admin or user.is_superuser,
+                        'is_superuser': user.is_superuser,
+                        'can_manage_users': user.is_admin or user.is_superuser,
+                        'can_access_api_debug': user.is_admin or user.is_superuser,
+                        'can_view_all_projects': user.is_admin or user.is_superuser
+                    }
                 }
             }
         })
@@ -356,7 +374,13 @@ def dashboard_data(request):
                 'user_info': {
                     'username': user.username,
                     'nickname': getattr(user, 'nickname', user.username),
-                    'is_admin': getattr(user, 'is_admin', False)
+                    'permissions': {
+                        'is_admin': user.is_admin or user.is_superuser,
+                        'is_superuser': user.is_superuser,
+                        'can_manage_users': user.is_admin or user.is_superuser,
+                        'can_access_api_debug': user.is_admin or user.is_superuser,
+                        'can_view_all_projects': user.is_admin or user.is_superuser
+                    }
                 }
             }
         })

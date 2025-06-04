@@ -19,6 +19,7 @@ import {
   Drawer,
   Descriptions,
   Badge,
+  Result,
 } from "antd";
 import {
   PlusOutlined,
@@ -28,22 +29,28 @@ import {
   EyeOutlined,
   MailOutlined,
   CalendarOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiService, User, CreateUserData, UpdateUserData } from "@/services/api";
 import type { ColumnsType } from 'antd/es/table';
+import { usePermissions } from "@/contexts/PermissionContext";
 
 const { Title, Text } = Typography;
 
 const UserManager: React.FC = () => {
   const queryClient = useQueryClient();
+  const { hasPermission } = usePermissions();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isViewDrawerVisible, setIsViewDrawerVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [form] = Form.useForm();
 
-  // 获取用户列表
+  // 检查是否有用户管理权限
+  const canManageUsers = hasPermission('can_manage_users');
+
+  // 获取用户列表 - 只有在有权限时才执行
   const {
     data: usersData,
     isLoading,
@@ -51,6 +58,7 @@ const UserManager: React.FC = () => {
   } = useQuery({
     queryKey: ["users"],
     queryFn: apiService.getUsers,
+    enabled: canManageUsers, // 只有有权限时才启用查询
   });
 
   // 创建用户
@@ -252,9 +260,24 @@ const UserManager: React.FC = () => {
       ),
     },
   ];
-
   const users = usersData?.data || [];
   const stats = usersData?.stats || {};
+
+  // 如果没有用户管理权限，显示无权限页面
+  if (!canManageUsers) {
+    return (
+      <Result
+        status="403"
+        title="无访问权限"
+        subTitle="抱歉，您没有权限访问用户管理页面。请联系管理员获取相应权限。"
+        extra={
+          <Button type="primary" onClick={() => window.history.back()}>
+            返回上页
+          </Button>
+        }
+      />
+    );
+  }
 
   return (
     <div>

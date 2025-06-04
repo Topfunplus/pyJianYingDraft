@@ -42,3 +42,25 @@ CREATE TABLE IF NOT EXISTS `api_project` (
 CREATE INDEX IF NOT EXISTS `idx_project_user_created` ON `api_project` (`user_id`, `created_at`);
 CREATE INDEX IF NOT EXISTS `idx_project_status` ON `api_project` (`status`);
 CREATE INDEX IF NOT EXISTS `idx_project_type` ON `api_project` (`type`);
+
+-- 插入管理员用户数据 (密码: Admin@123456)
+INSERT INTO `users_customuser` (
+    `username`, `password`, `email`, `nickname`, `first_name`, `last_name`,
+    `is_staff`, `is_superuser`, `is_active`, `is_admin`, 
+    `date_joined`, `created_at`, `updated_at`
+) VALUES (
+    'admin', 
+    'pbkdf2_sha256$600000$salt$hash', -- 这里应该是加密后的密码
+    'admin@jianying.com', 
+    '系统管理员', 
+    '系统', 
+    '管理员',
+    1, 1, 1, 1, 
+    NOW(), NOW(), NOW()
+) ON DUPLICATE KEY UPDATE 
+    `email` = VALUES(`email`),
+    `nickname` = VALUES(`nickname`),
+    `is_admin` = 1,
+    `is_staff` = 1,
+    `is_superuser` = 1,
+    `updated_at` = NOW();

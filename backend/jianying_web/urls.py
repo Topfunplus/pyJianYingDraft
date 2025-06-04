@@ -15,5 +15,5 @@ urlpatterns = [
     path('health/', health_check, name='health'),
     path('api/', include('api.urls')),
     path('api/auth/', include('users.urls')),
-    path('', include('api.urls')),  # 首页重定向到API
+    path('api/users/', include('users.management_urls')),  # 用户管理路由
 ]

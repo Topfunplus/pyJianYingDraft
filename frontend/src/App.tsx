@@ -11,7 +11,7 @@ import ProjectManager from "@/pages/ProjectManager";
 import UserManager from "@/pages/UserManager";
 import Login from "@/pages/Login";
 import ApiDocs from "@/pages/ApiDocs";
-import { apiService } from "@/services/api";
+import { PermissionProvider } from "@/contexts/PermissionContext";
 import "./App.css";
 
 const queryClient = new QueryClient({
@@ -44,10 +44,11 @@ const App: React.FC = () => {
           },
         }}>
         <AntApp>
-          <Router>
-            <Routes>
-              {/* 公开路由 */}
-              <Route path="/login" element={<Login />} />
+          <PermissionProvider>
+            <Router>
+              <Routes>
+                {/* 公开路由 */}
+                <Route path="/login" element={<Login />} />
               
               {/* 受保护的路由 */}
               <Route path="/" element={
@@ -89,11 +90,11 @@ const App: React.FC = () => {
                   </Layout>
                 </ProtectedRoute>
               } />
-              
-              {/* 重定向未匹配的路由 */}
+                {/* 重定向未匹配的路由 */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
+        </PermissionProvider>
         </AntApp>
       </ConfigProvider>
     </QueryClientProvider>

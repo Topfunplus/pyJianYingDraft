@@ -50,7 +50,6 @@ const UserProfile: React.FC = () => {
       navigate('/login');
     },
   });
-
   // 更新资料mutation
   const updateMutation = useMutation({
     mutationFn: apiService.updateProfile,
@@ -60,11 +59,38 @@ const UserProfile: React.FC = () => {
       setIsEditModalVisible(false);
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.message || '更新失败');
+      const errorData = error.response?.data;
+      
+      if (errorData?.errors && typeof errorData.errors === 'object') {
+        // 处理字段级错误
+        const formFields: any[] = [];
+        let hasFieldErrors = false;
+        
+        Object.keys(errorData.errors).forEach(fieldName => {
+          const errors = errorData.errors[fieldName];
+          
+          if (Array.isArray(errors) && errors.length > 0) {
+            formFields.push({
+              name: fieldName,
+              errors: errors
+            });
+            hasFieldErrors = true;
+          }
+        });
+        
+        // 设置表单字段错误
+        if (hasFieldErrors) {
+          form.setFields(formFields);
+        }
+        
+        // 显示通用错误消息
+        message.error(errorData.message || '更新失败');
+      } else {
+        // 其他类型的错误
+        message.error(errorData?.message || '更新失败');
+      }
     },
-  });
-
-  // 修改密码mutation
+  });// 修改密码mutation
   const changePasswordMutation = useMutation({
     mutationFn: apiService.changePassword,
     onSuccess: () => {
@@ -73,7 +99,44 @@ const UserProfile: React.FC = () => {
       passwordForm.resetFields();
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.message || '修改密码失败');
+      const errorData = error.response?.data;
+      
+      if (errorData?.errors && typeof errorData.errors === 'object') {
+        // 后端字段到前端字段的映射
+        const fieldMapping: { [key: string]: string } = {
+          'old_password': 'oldPassword',
+          'new_password': 'newPassword', 
+          'confirm_password': 'confirmNewPassword'
+        };
+        
+        // 处理字段级错误
+        const formFields: any[] = [];
+        let hasFieldErrors = false;
+        
+        Object.keys(errorData.errors).forEach(backendField => {
+          const frontendField = fieldMapping[backendField] || backendField;
+          const errors = errorData.errors[backendField];
+          
+          if (Array.isArray(errors) && errors.length > 0) {
+            formFields.push({
+              name: frontendField,
+              errors: errors
+            });
+            hasFieldErrors = true;
+          }
+        });
+        
+        // 设置表单字段错误
+        if (hasFieldErrors) {
+          passwordForm.setFields(formFields);
+        }
+        
+        // 显示通用错误消息
+        message.error(errorData.message || '密码修改失败');
+      } else {
+        // 其他类型的错误
+        message.error(errorData?.message || '修改密码失败');
+      }
     },
   });
 
@@ -84,13 +147,13 @@ const UserProfile: React.FC = () => {
       onOk: () => logoutMutation.mutate(),
     });
   };
-
   const handleChangePassword = async () => {
     try {
       const values = await passwordForm.validateFields();
       changePasswordMutation.mutate({
         old_password: values.oldPassword,
         new_password: values.newPassword,
+        confirm_password: values.confirmNewPassword,
       });
     } catch (error) {
       console.error('表单验证失败:', error);

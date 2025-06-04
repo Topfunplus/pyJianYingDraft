@@ -6,7 +6,6 @@ import {
   Typography,
   Avatar,
   Space,
-  Badge,
 } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -14,11 +13,11 @@ import {
   ProjectOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  NotificationOutlined,
   UserOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
-import { Film, Cpu } from "lucide-react";
+import { Film } from "lucide-react";
+import { usePermissions } from "@/contexts/PermissionContext";
 import UserProfile from "./UserProfile";
 
 const { Header, Sider, Content } = AntLayout;
@@ -36,7 +35,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     token: { colorBgContainer },
   } = theme.useToken();
 
-  const menuItems = [
+  // 获取权限信息
+  const { hasPermission } = usePermissions();
+
+  // 基础菜单项
+  const baseMenuItems = [
     {
       key: "/",
       icon: <DashboardOutlined />,
@@ -52,17 +55,41 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       icon: <ProjectOutlined />,
       label: "项目管理",
     },
+  ];
+  // 管理员菜单项
+  const adminMenuItems = [
     {
       key: "/users",
       icon: <UserOutlined />,
       label: "用户管理",
+      requiresPermission: 'can_manage_users' as const,
     },
     {
       key: "/docs",
       icon: <SettingOutlined />,
       label: "API调试",
+      requiresPermission: 'can_access_api_debug' as const,
     },
   ];
+
+  // 根据权限过滤菜单项
+  const getFilteredMenuItems = () => {
+    const menuItems = [...baseMenuItems];
+    
+    adminMenuItems.forEach(item => {
+      if (hasPermission(item.requiresPermission)) {
+        menuItems.push({
+          key: item.key,
+          icon: item.icon,
+          label: item.label,
+        });
+      }
+    });
+    
+    return menuItems;
+  };
+
+  const menuItems = getFilteredMenuItems();
 
   return (
     <AntLayout style={{ minHeight: "100vh" }}>

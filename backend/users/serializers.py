@@ -7,11 +7,24 @@ User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     """用户序列化器"""
+    # 添加权限相关字段
+    permissions = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'nickname', 'phone', 'avatar', 'is_active', 
-                 'is_admin', 'last_login', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'last_login', 'created_at', 'updated_at')
+                 'is_admin', 'is_superuser', 'last_login', 'created_at', 'updated_at', 'permissions')
+        read_only_fields = ('id', 'last_login', 'created_at', 'updated_at', 'permissions')
+    
+    def get_permissions(self, obj):
+        """获取用户权限信息"""
+        return {
+            'is_admin': obj.is_admin or obj.is_superuser,
+            'is_superuser': obj.is_superuser,
+            'can_manage_users': obj.is_admin or obj.is_superuser,
+            'can_access_api_debug': obj.is_admin or obj.is_superuser,
+            'can_view_all_projects': obj.is_admin or obj.is_superuser
+        }
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """用户注册序列化器"""
@@ -88,3 +101,61 @@ class ProjectListSerializer(serializers.ModelSerializer):
         model = Project
         fields = ('id', 'name', 'type', 'status', 'created_at', 'user_name', 'output_path')
         read_only_fields = ('id', 'created_at', 'user_name')
+
+class UserManagementSerializer(serializers.ModelSerializer):
+    """用户管理序列化器 - 用于管理员创建/管理用户"""
+    password = serializers.CharField(write_only=True, required=False)
+    permissions = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'nickname', 'phone', 'is_active', 
+                 'is_admin', 'is_superuser', 'password', 'created_at', 'updated_at', 
+                 'last_login', 'permissions')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'last_login', 'permissions')
+        extra_kwargs = {
+            'email': {'required': False},
+            'nickname': {'required': False},
+            'phone': {'required': False},
+            'password': {'required': False}
+        }
+    
+    def get_permissions(self, obj):
+        """获取用户权限信息"""
+        return {
+            'is_admin': obj.is_admin or obj.is_superuser,
+            'is_superuser': obj.is_superuser,
+            'can_manage_users': obj.is_admin or obj.is_superuser,
+            'can_access_api_debug': obj.is_admin or obj.is_superuser,
+            'can_view_all_projects': obj.is_admin or obj.is_superuser
+        }
+    
+    def create(self, validated_data):
+        # 管理员创建用户时，如果没有提供密码，使用默认密码
+        password = validated_data.pop('password', 'default123')
+        
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data.get('email', ''),
+            password=password
+        )
+        
+        # 设置其他字段
+        for field, value in validated_data.items():
+            setattr(user, field, value)
+        
+        user.save()
+        return user
+    
+    def update(self, instance, validated_data):
+        # 如果提供了新密码，更新密码
+        password = validated_data.pop('password', None)
+        if password:
+            instance.set_password(password)
+        
+        # 更新其他字段
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        
+        instance.save()
+        return instance

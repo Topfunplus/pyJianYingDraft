@@ -14,6 +14,14 @@ export interface ProjectConfig {
   [key: string]: any;
 }
 
+export interface UserPermissions {
+  can_manage_users: boolean;
+  can_access_api_debug: boolean;
+  is_admin?: boolean;
+  is_superuser?: boolean;
+  can_view_all_projects?: boolean;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -26,6 +34,7 @@ export interface User {
   last_login?: string | null;
   created_at: string;
   updated_at: string;
+  permissions?: UserPermissions;
 }
 
 export interface CreateUserData {
@@ -59,7 +68,7 @@ export interface AuthResponse {
   success: boolean;
   message: string;
   data?: {
-    user: User;
+    user: User & { permissions: UserPermissions };
     token: string;
   };
 }
@@ -72,7 +81,6 @@ class ApiService {
     this.token = localStorage.getItem('auth_token');
     this.setupInterceptors();
   }
-
   private setupInterceptors() {
     // 请求拦截器 - 添加认证头
     axios.interceptors.request.use((config) => {
@@ -87,8 +95,9 @@ class ApiService {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          this.logout();
-          window.location.href = '/login';
+          console.log('检测到401错误，清除token');
+          this.clearToken();
+          // 不在这里直接重定向，让组件处理重定向
         }
         return Promise.reject(error);
       }
@@ -115,8 +124,7 @@ class ApiService {
     }
     return data;
   }
-
-  async logout(): Promise<void> {
+  logout = async (): Promise<void> => {
     try {
       await axios.post(`${API_BASE_URL}/auth/logout`);
     } catch (error) {
@@ -135,8 +143,7 @@ class ApiService {
     const { data } = await axios.put(`${API_BASE_URL}/auth/profile`, profileData);
     return data.data;
   }
-
-  async changePassword(passwordData: { old_password: string; new_password: string }) {
+  async changePassword(passwordData: { old_password: string; new_password: string; confirm_password: string }) {
     const { data } = await axios.post(`${API_BASE_URL}/auth/change-password`, passwordData);
     return data;
   }

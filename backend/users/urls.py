@@ -15,8 +15,4 @@ urlpatterns = [
     re_path(r'^profile/?$', views.UserProfileView.as_view(), name='user_profile_alt'),
     re_path(r'^change-password/?$', views.ChangePasswordView.as_view(), name='change_password'),
     re_path(r'^stats/?$', views.user_stats, name='user_stats'),
-    
-    # 用户管理（管理员功能）
-    path('', views.UserListView.as_view(), name='user_list'),
-    re_path(r'^(?P<pk>\d+)/?$', views.UserDetailView.as_view(), name='user_detail'),
 ]
