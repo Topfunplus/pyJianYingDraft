@@ -72,6 +72,7 @@ class Text_style:
         self.letter_spacing = letter_spacing
         self.line_spacing = line_spacing
 
+
 class Text_border:
     """文本描边的参数"""
 
@@ -104,6 +105,7 @@ class Text_border:
             },
             "width": self.width
         }
+
 
 class Text_background:
     """文本背景参数"""
@@ -163,6 +165,7 @@ class Text_background:
             "background_vertical_offset": self.vertical_offset,
         }
 
+
 class TextBubble:
     """文本气泡素材, 与滤镜素材本质上一致"""
 
@@ -188,6 +191,7 @@ class TextBubble:
             # 不导出path和request_id
         }
 
+
 class TextEffect(TextBubble):
     """文本花字素材, 与滤镜素材本质上也一致"""
 
@@ -196,6 +200,7 @@ class TextEffect(TextBubble):
         ret["type"] = "text_effect"
         ret["source_platform"] = 1
         return ret
+
 
 class Text_segment(Visual_segment):
     """文本片段类, 目前仅支持设置基本的字体样式"""
@@ -234,7 +239,8 @@ class Text_segment(Visual_segment):
             border (`Text_border`, optional): 文本描边参数, 默认无描边
             background (`Text_background`, optional): 文本背景参数, 默认无背景
         """
-        super().__init__(uuid.uuid4().hex, None, timerange, 1.0, 1.0, clip_settings=clip_settings)
+        super().__init__(uuid.uuid4().hex, None, timerange,
+                         1.0, 1.0, clip_settings=clip_settings)
 
         self.text = text
         self.font = font.value if font else None
@@ -254,11 +260,14 @@ class Text_segment(Visual_segment):
 
         # 处理动画等
         if template.animations_instance:
-            new_segment.animations_instance = deepcopy(template.animations_instance)
+            new_segment.animations_instance = deepcopy(
+                template.animations_instance)
             new_segment.animations_instance.animation_id = uuid.uuid4().hex
-            new_segment.extra_material_refs.append(new_segment.animations_instance.animation_id)
+            new_segment.extra_material_refs.append(
+                new_segment.animations_instance.animation_id)
         if template.bubble:
-            new_segment.add_bubble(template.bubble.effect_id, template.bubble.resource_id)
+            new_segment.add_bubble(
+                template.bubble.effect_id, template.bubble.resource_id)
         if template.effect:
             new_segment.add_effect(template.effect.effect_id)
 
@@ -282,18 +291,23 @@ class Text_segment(Visual_segment):
         elif isinstance(animation_type, Text_outro):
             start = self.target_timerange.duration - duration
         elif isinstance(animation_type, Text_loop_anim):
-            intro_trange = self.animations_instance and self.animations_instance.get_animation_trange("in")
-            outro_trange = self.animations_instance and self.animations_instance.get_animation_trange("out")
+            intro_trange = self.animations_instance and self.animations_instance.get_animation_trange(
+                "in")
+            outro_trange = self.animations_instance and self.animations_instance.get_animation_trange(
+                "out")
             start = intro_trange.start if intro_trange else 0
-            duration = self.target_timerange.duration - start - (outro_trange.duration if outro_trange else 0)
+            duration = self.target_timerange.duration - start - \
+                (outro_trange.duration if outro_trange else 0)
         else:
             raise TypeError("Invalid animation type %s" % type(animation_type))
 
         if self.animations_instance is None:
             self.animations_instance = Segment_animations()
-            self.extra_material_refs.append(self.animations_instance.animation_id)
+            self.extra_material_refs.append(
+                self.animations_instance.animation_id)
 
-        self.animations_instance.add_animation(Text_animation(animation_type, start, duration))
+        self.animations_instance.add_animation(
+            Text_animation(animation_type, start, duration))
 
         return self
 

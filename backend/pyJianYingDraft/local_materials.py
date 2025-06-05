@@ -6,6 +6,7 @@ from typing import Optional, Literal
 import pymediainfo
 
 
+# 这个类可以用来设置素材的裁剪参数, 例如裁剪视频的某个区域
 class Crop_settings:
     """素材的裁剪设置, 各属性均在0-1之间, 注意素材的坐标原点在左上角"""
 
@@ -44,6 +45,8 @@ class Crop_settings:
             "lower_right_y": self.lower_right_y
         }
 
+
+# 素材类 提供的构造函数可以从指定位置加载视频或音频素材
 class Video_material:
     """本地视频素材（视频或图片）, 一份素材可以在多个片段中使用"""
 
@@ -66,6 +69,8 @@ class Video_material:
     material_type: Literal["video", "photo"]
     """素材类型: 视频或图片"""
 
+    # Optional 是一个特殊的类型，表示这个参数可以是 str 类型，也可以是 None
+    # Crop_settings如果不传递 则默认为不裁剪 即创建一个空参构造函数
     def __init__(self, path: str, material_name: Optional[str] = None, crop_settings: Crop_settings = Crop_settings()):
         """从指定位置加载视频（或图片）素材
 
@@ -83,8 +88,10 @@ class Video_material:
         if not os.path.exists(path):
             raise FileNotFoundError(f"找不到 {path}")
 
-        self.material_name = material_name if material_name else os.path.basename(path)
-        self.material_id = uuid.uuid3(uuid.NAMESPACE_DNS, self.material_name).hex
+        self.material_name = material_name if material_name else os.path.basename(
+            path)
+        self.material_id = uuid.uuid3(
+            uuid.NAMESPACE_DNS, self.material_name).hex
         self.path = path
         self.crop_settings = crop_settings
         self.local_material_id = ""
@@ -93,27 +100,35 @@ class Video_material:
             raise ValueError(f"不支持的视频素材类型 '{postfix}'")
 
         info: pymediainfo.MediaInfo = \
-            pymediainfo.MediaInfo.parse(path, mediainfo_options={"File_TestContinuousFileNames": "0"})  # type: ignore
+            pymediainfo.MediaInfo.parse(path, mediainfo_options={
+                                        "File_TestContinuousFileNames": "0"})  # type: ignore
         # 有视频轨道的视为视频素材
         if len(info.video_tracks):
             self.material_type = "video"
-            self.duration = int(info.video_tracks[0].duration * 1e3)  # type: ignore
-            self.width, self.height = info.video_tracks[0].width, info.video_tracks[0].height  # type: ignore
+            self.duration = int(
+                info.video_tracks[0].duration * 1e3)  # type: ignore
+            # type: ignore
+            self.width, self.height = info.video_tracks[0].width, info.video_tracks[0].height
         # gif文件使用imageio库获取长度
         elif postfix.lower() == ".gif":
             import imageio
             gif = imageio.get_reader(path)
 
             self.material_type = "video"
-            self.duration = int(round(gif.get_meta_data()['duration'] * gif.get_length() * 1e3))
-            self.width, self.height = info.image_tracks[0].width, info.image_tracks[0].height  # type: ignore
+            self.duration = int(
+                round(gif.get_meta_data()['duration'] * gif.get_length() * 1e3))
+            # type: ignore
+            self.width, self.height = info.image_tracks[0].width, info.image_tracks[0].height
             gif.close()
         elif len(info.image_tracks):
             self.material_type = "photo"
             self.duration = 10800000000  # 相当于3h
-            self.width, self.height = info.image_tracks[0].width, info.image_tracks[0].height  # type: ignore
+            # type: ignore
+            self.width, self.height = info.image_tracks[0].width, info.image_tracks[0].height
         else:
             raise ValueError(f"输入的素材文件 {path} 没有视频轨道或图片轨道")
+
+    # 导出为JSON格式, 方便传输或存储
 
     def export_json(self) -> Dict[str, Any]:
         video_material_json = {
@@ -136,6 +151,7 @@ class Video_material:
             "width": self.width
         }
         return video_material_json
+
 
 class Audio_material:
     """本地音频素材"""
@@ -165,18 +181,22 @@ class Audio_material:
         if not os.path.exists(path):
             raise FileNotFoundError(f"找不到 {path}")
 
-        self.material_name = material_name if material_name else os.path.basename(path)
-        self.material_id = uuid.uuid3(uuid.NAMESPACE_DNS, self.material_name).hex
+        self.material_name = material_name if material_name else os.path.basename(
+            path)
+        self.material_id = uuid.uuid3(
+            uuid.NAMESPACE_DNS, self.material_name).hex
         self.path = path
 
         if not pymediainfo.MediaInfo.can_parse():
             raise ValueError("不支持的音频素材类型 %s" % os.path.splitext(path)[1])
-        info: pymediainfo.MediaInfo = pymediainfo.MediaInfo.parse(path)  # type: ignore
+        info: pymediainfo.MediaInfo = pymediainfo.MediaInfo.parse(
+            path)  # type: ignore
         if len(info.video_tracks):
             raise ValueError("音频素材不应包含视频轨道")
         if not len(info.audio_tracks):
             raise ValueError(f"给定的素材文件 {path} 没有音频轨道")
-        self.duration = int(info.audio_tracks[0].duration * 1e3)  # type: ignore
+        self.duration = int(
+            info.audio_tracks[0].duration * 1e3)  # type: ignore
 
     def export_json(self) -> Dict[str, Any]:
         return {

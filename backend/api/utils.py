@@ -7,11 +7,15 @@ import json
 from datetime import datetime
 from rest_framework import status
 from rest_framework.response import Response
+import jianying_web.settings as settings
 
 # 添加项目根目录到路径
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, project_root)
 logger = logging.getLogger('api')
+
+# 装饰器可以在函数前执行 比如 api_error_handler 函数，可以在函数执行之前，先执行装饰器中的代码
+# func 就是一个 函数指针
 
 
 def api_error_handler(func):
@@ -28,10 +32,22 @@ def api_error_handler(func):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return wrapper
 
+# **kwargs 的意思是 可以传递任意数量的变量 类似Java剩余运算符 ...args
+
 
 def create_success_response(message, **kwargs):
     """创建成功响应"""
     data = {"success": True, "message": message}
+
+    # update函数可以更新字典内容 可以是列表 也可以是字典
+    """
+        dict1 = {"name": "Alice", "age": 30}
+        items = [("age", 31), ("city", "New York")]
+
+        dict1.update(items)
+        print(dict1)  # 输出: {'name': 'Alice', 'age': 31, 'city': 'New York'}
+        
+    """
     data.update(kwargs)
     return Response(data)
 
@@ -44,18 +60,18 @@ def create_error_response(message, status_code=status.HTTP_400_BAD_REQUEST):
     }, status=status_code)
 
 
-def create_basic_script():
-    """创建基础脚本对象"""
+# TODO 创建的基础脚本对象 这个Script_file 对象初始化后就是剪映的基础模板，可以直接套用
+def create_basic_script() -> draft.Script_file:
     return draft.Script_file(1920, 1080, fps=30)
 
 
+# 这个函数可以将草稿内容保存到文件中
 def save_draft_to_file(draft_content, filename=None):
-    """保存草稿内容到文件"""
     if filename is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"draft_{timestamp}.json"
 
-    # 使用Django settings中的配置
+    # 使用Django settings中的配置 /config/settings.py
     web_output_dir = getattr(settings, 'WEB_OUTPUT_DIR',
                              os.path.join(project_root, "web_outputs"))
     os.makedirs(web_output_dir, exist_ok=True)

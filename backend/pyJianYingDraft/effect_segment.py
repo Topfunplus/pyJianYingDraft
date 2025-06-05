@@ -8,6 +8,7 @@ from .time_util import Timerange
 from .video_segment import Video_effect, Filter
 
 
+# 特效片段
 class Effect_segment(Base_segment):
     """放置在独立特效轨道上的特效片段"""
 
@@ -19,9 +20,12 @@ class Effect_segment(Base_segment):
 
     def __init__(self, effect_type: Union[Video_scene_effect_type, Video_character_effect_type],
                  target_timerange: Timerange, params: Optional[List[Optional[float]]] = None):
-        self.effect_inst = Video_effect(effect_type, params, apply_target_type=2)  # 作用域为全局
+        self.effect_inst = Video_effect(
+            effect_type, params, apply_target_type=2)  # 作用域为全局
         super().__init__(self.effect_inst.global_id, target_timerange)
 
+
+# 滤镜片段
 class Filter_segment(Base_segment):
     """放置在独立滤镜轨道上的滤镜片段"""
 

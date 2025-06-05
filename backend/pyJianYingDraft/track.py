@@ -15,6 +15,7 @@ from .text_segment import Text_segment
 from .video_segment import Video_segment, Sticker_segment
 
 
+# @dataclass 装饰器可以帮助你自动添加一些常用的类方法，比如 __init__、__repr__、__eq__ 等，从而让你更方便地定义和使用数据类。
 @dataclass
 class Track_meta:
     """与轨道类型关联的轨道元数据"""
@@ -28,6 +29,7 @@ class Track_meta:
     allow_modify: bool
     """当被导入时, 是否允许修改"""
 
+
 class Track_type(Enum):
     """轨道类型枚举
 
@@ -39,7 +41,8 @@ class Track_type(Enum):
     effect = Track_meta(Effect_segment, 10000, False)
     filter = Track_meta(Filter_segment, 11000, False)
     sticker = Track_meta(Sticker_segment, 14000, False)
-    text = Track_meta(Text_segment, 15000, True)  # 原本是14000, 避免与sticker冲突改为15000
+    # 原本是14000, 避免与sticker冲突改为15000
+    text = Track_meta(Text_segment, 15000, True)
 
     adjust = Track_meta(None, 0, False)
     """仅供导入时使用, 不要尝试新建此类型的轨道"""
@@ -68,7 +71,10 @@ class Base_track(ABC):
     @abstractmethod
     def export_json(self) -> Dict[str, Any]: ...
 
+
 Seg_type = TypeVar("Seg_type", bound=Base_segment)
+
+
 class Track(Base_track, Generic[Seg_type]):
     """非模板模式下的轨道"""
 
@@ -110,7 +116,8 @@ class Track(Base_track, Generic[Seg_type]):
             `SegmentOverlap`: 新片段与现有片段重叠
         """
         if not isinstance(segment, self.accept_segment_type):
-            raise TypeError("New segment (%s) is not of the same type as the track (%s)" % (type(segment), self.accept_segment_type))
+            raise TypeError("New segment (%s) is not of the same type as the track (%s)" % (
+                type(segment), self.accept_segment_type))
 
         # 检查片段是否重叠
         for seg in self.segments:

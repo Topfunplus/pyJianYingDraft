@@ -8,6 +8,7 @@ from .keyframe import Keyframe_list, Keyframe_property
 from .time_util import Timerange, tim
 
 
+# 基础片段类 ，定义了片段中一些基本的通用的属性和方法
 class Base_segment:
     """片段基类"""
 
@@ -21,6 +22,7 @@ class Base_segment:
     common_keyframes: List[Keyframe_list]
     """各属性的关键帧列表"""
 
+    # 构造函数
     def __init__(self, material_id: str, target_timerange: Timerange):
         self.segment_id = uuid.uuid4().hex
         self.material_id = material_id
@@ -32,6 +34,9 @@ class Base_segment:
     def start(self) -> int:
         """片段开始时间, 单位为微秒"""
         return self.target_timerange.start
+
+    # @propertuy 和 @property.setter 是 Python 中的属性装饰器 它们允许你通过属性的方式访问和修改对象的属性，而不是直接修改对象的实例变量
+
     @start.setter
     def start(self, value: int):
         self.target_timerange.start = value
@@ -40,6 +45,7 @@ class Base_segment:
     def duration(self) -> int:
         """片段持续时间, 单位为微秒"""
         return self.target_timerange.duration
+
     @duration.setter
     def duration(self, value: int):
         self.target_timerange.duration = value
@@ -77,6 +83,9 @@ class Base_segment:
             "keyframe_refs": [],  # 意义不明
         }
 
+
+
+# 只支持固定速度
 class Speed:
     """播放速度对象, 目前只支持固定速度"""
 
@@ -97,6 +106,7 @@ class Speed:
             "speed": self.speed,
             "type": "speed"
         }
+
 
 class Clip_settings:
     """素材片段的图像调节设置"""
@@ -152,6 +162,7 @@ class Clip_settings:
         }
         return clip_settings_json
 
+
 class Media_segment(Base_segment):
     """媒体片段基类"""
 
@@ -184,6 +195,7 @@ class Media_segment(Base_segment):
             "extra_material_refs": self.extra_material_refs,
         })
         return ret
+
 
 class Visual_segment(Media_segment):
     """视觉片段基类，用于处理所有可见片段（视频、贴纸、文本）的共同属性和行为"""
@@ -233,10 +245,12 @@ class Visual_segment(Media_segment):
             self.uniform_scale = False
         elif _property == Keyframe_property.uniform_scale:
             if not self.uniform_scale:
-                raise ValueError("已设置 scale_x 或 scale_y 时, 不能再设置 uniform_scale")
+                raise ValueError(
+                    "已设置 scale_x 或 scale_y 时, 不能再设置 uniform_scale")
             _property = Keyframe_property.scale_x
 
-        if isinstance(time_offset, str): time_offset = tim(time_offset)
+        if isinstance(time_offset, str):
+            time_offset = tim(time_offset)
 
         for kf_list in self.common_keyframes:
             if kf_list.keyframe_property == _property:

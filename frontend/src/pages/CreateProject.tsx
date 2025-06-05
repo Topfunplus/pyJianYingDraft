@@ -45,7 +45,6 @@ import PathSelectModal from "@/components/PathSelectModal";
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
-const { Step } = Steps;
 
 interface ProjectSection {
   enabled: boolean;
@@ -986,7 +985,6 @@ const CreateProject: React.FC = () => {
         width={800}
         footer={null}
         destroyOnHidden>
-        
         <div style={{ marginBottom: 24 }}>
           <Steps
             current={currentStep}
