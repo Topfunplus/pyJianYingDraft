@@ -7,6 +7,7 @@ import os
 # 添加项目根目录到Python路径
 import sys
 from datetime import datetime
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -32,6 +33,7 @@ def health_check(requests):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@csrf_exempt  # 添加CSRF豁免
 @api_error_handler
 def basic_project(request):
     """基础项目创建接口"""
@@ -46,11 +48,13 @@ def basic_project(request):
         name=f'基础项目_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
         type='basic-project',
         status='completed',
-        draft_content=script.dumps() if hasattr(script, 'to_dict') else {})
+        draft_content=script.dumps() if hasattr(script, 'dumps') else "{}")
 
     return create_success_response(
         "基础项目创建成功",
         project_info={
             "id": project.id,
-            "name": project.name, "type": project.type}
+            "name": project.name, 
+            "type": project.type
+        }
     )

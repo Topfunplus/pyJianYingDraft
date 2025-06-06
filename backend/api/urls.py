@@ -1,4 +1,4 @@
-from django.urls import path, re_path
+from django.urls import re_path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from . import views
@@ -27,12 +27,9 @@ urlpatterns = [
     re_path(r'^users/?$', user_views.UserListView.as_view(),
             name='user_management_list'),
     re_path(r'^users/(?P<pk>\d+)/?$', user_views.UserDetailView.as_view(),
-            name='user_management_detail')
-    # ---------------------------------------------------------------
+            name='user_management_detail'),
 
-
-    # 项目相关的接口API配置在这下面
-
-
+    # 项目相关接口
+    re_path(r'^projects/basic/?$', views.basic_project, name='create_basic_project'),
 
 ]
