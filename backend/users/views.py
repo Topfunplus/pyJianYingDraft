@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+from typing import cast
 
 from api.models import Project
 from django.contrib.auth import get_user_model
@@ -55,6 +56,7 @@ class RegisterView(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
+# 登录的相关
 class LoginView(APIView):
     """用户登录"""
     permission_classes = [permissions.AllowAny]
@@ -62,7 +64,7 @@ class LoginView(APIView):
     def post(self, request):
         logger.info(f"📝 登录请求数据: {request.data}")
 
-        serializer = LoginSerializer(data=request.data)
+        serializer: LoginSerializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
 
@@ -71,10 +73,12 @@ class LoginView(APIView):
             user.save(update_fields=['last_login_ip'])
 
             refresh = RefreshToken.for_user(user)
-            logger.info(f"✅ 用户登录成功: {user.username} (ID: {user.id}) - 管理员: {user.is_admin or user.is_superuser}")
+            logger.info(
+                f"✅ 用户登录成功: {user.username} (ID: {user.id}) - 管理员: {user.is_admin or user.is_superuser}")
 
             return Response({
                 'success': True,
+
                 'message': '登录成功',
                 'data': {
                     'user': UserSerializer(user).data,
@@ -128,7 +132,8 @@ class UserProfileView(APIView):
     def get(self, request):
         """获取当前用户信息"""
         user_data = UserSerializer(request.user).data
-        logger.info(f"📝 用户 {request.user.username} 获取资料，权限: {user_data.get('permissions', {})}")
+        logger.info(
+            f"📝 用户 {request.user.username} 获取资料，权限: {user_data.get('permissions', {})}")
 
         return Response({
             'success': True,
@@ -137,10 +142,12 @@ class UserProfileView(APIView):
 
     def put(self, request):
         """更新用户资料"""
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer = UserSerializer(
+            request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            logger.info(f"✅ 用户资料更新成功: {request.user.username} (ID: {request.user.id})")
+            logger.info(
+                f"✅ 用户资料更新成功: {request.user.username} (ID: {request.user.id})")
             return Response({
                 'success': True,
                 'message': '资料更新成功',
@@ -159,7 +166,8 @@ class ChangePasswordView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        serializer = ChangePasswordSerializer(
+            data=request.data, context={'request': request})
         if serializer.is_valid():
             user = request.user
             user.set_password(serializer.validated_data['new_password'])
@@ -208,7 +216,8 @@ class UserListView(generics.ListCreateAPIView):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
 
-        logger.info(f"📋 用户 {request.user.username} 获取用户列表，数量: {queryset.count()}")
+        logger.info(
+            f"📋 用户 {request.user.username} 获取用户列表，数量: {queryset.count()}")
 
         return Response({
             'success': True,
@@ -228,7 +237,8 @@ class UserListView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            logger.info(f"✅ 管理员 {request.user.username} 创建用户成功: {user.username} (ID: {user.id})")
+            logger.info(
+                f"✅ 管理员 {request.user.username} 创建用户成功: {user.username} (ID: {user.id})")
 
             return Response({
                 'success': True,
@@ -268,7 +278,8 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
 
-        logger.info(f"📋 用户 {request.user.username} 获取用户详情: {instance.username}")
+        logger.info(
+            f"📋 用户 {request.user.username} 获取用户详情: {instance.username}")
 
         return Response({
             'success': True,
@@ -287,11 +298,13 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
                 'message': '权限不足，无法修改该用户信息'
             }, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial)
 
         if serializer.is_valid():
             user = serializer.save()
-            logger.info(f"✅ 用户信息更新成功: {user.username} (ID: {user.id}) by {request.user.username}")
+            logger.info(
+                f"✅ 用户信息更新成功: {user.username} (ID: {user.id}) by {request.user.username}")
 
             return Response({
                 'success': True,
@@ -389,7 +402,8 @@ class UserManagementView(APIView):
             user = serializer.save()
 
             # 记录日志
-            logger.info(f"✅ 管理员 {request.user.username} 成功创建用户: {user.username} (ID: {user.id})")
+            logger.info(
+                f"✅ 管理员 {request.user.username} 成功创建用户: {user.username} (ID: {user.id})")
 
             return Response({
                 'success': True,
@@ -456,7 +470,8 @@ class UserManagementDetailView(APIView):
                 'message': '用户不存在'
             }, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = UserManagementSerializer(user, data=request.data, partial=True)
+        serializer = UserManagementSerializer(
+            user, data=request.data, partial=True)
         if serializer.is_valid():
             user = serializer.save()
             logger.info(f"✅ 管理员 {request.user.username} 更新用户: {user.username}")

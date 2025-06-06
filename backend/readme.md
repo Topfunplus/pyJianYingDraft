@@ -60,3 +60,7 @@ http 路由配置：
 3. 片段说明
 
 通用片段 /backend/pyJianYingDraft/segement.py 中 `Base_segment` 类定义了基本的片段操作 
+
+
+### 功能汇总
+1. 文本片段生成

@@ -14,5 +14,5 @@ def health_check(request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('health/', health_check, name='health'),
-    path('api/', include('api.urls')),  # 所有API都通过这个入口
+    path('api/', include('api.urls'))
 ]

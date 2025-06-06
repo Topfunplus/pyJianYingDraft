@@ -69,6 +69,7 @@ interface UploadedAsset {
   size?: number;
 }
 
+// 开始创作菜单 这里可以进行一系列的编辑操作，如添加文本、音频、视频等片段，配置动画和特效等
 const CreateProject: React.FC = () => {
   const [form] = Form.useForm();
   const [configModalVisible, setConfigModalVisible] = useState(false);
