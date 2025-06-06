@@ -3,6 +3,8 @@ import os
 import sys
 
 
+# 这个脚本是 Django 的管理脚本，用于执行各种管理任务，如运行服务器、迁移数据库等。
+# 它通常位于 Django 项目的根目录下。
 def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'jianying_web.settings')
     try:

@@ -1,0 +1,953 @@
+openapi: 3.0.3
+info:
+  title: pyJianYingDraft API
+  description: |
+    基于Django REST Framework构建的剪映草稿生成服务API
+    
+    ## 认证方式
+    API使用JWT (JSON Web Token) 进行身份验证。
+    
+    ### 获取Token
+    1. 使用 `/api/auth/login` 接口登录获取访问令牌
+    2. 在请求头中添加: `Authorization: Bearer <access_token>`
+    
+    ### Token刷新
+    当访问令牌过期时，使用 `/api/auth/token/refresh` 接口刷新令牌
+    
+  version: "2.0.0"
+  contact:
+    name: pyJianYingDraft
+    url: https://github.com/your-repo
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000/api
+    description: 开发环境
+  - url: https://your-domain.com/api
+    description: 生产环境
+
+tags:
+  - name: health
+    description: 健康检查
+  - name: auth
+    description: 用户认证
+  - name: users
+    description: 用户管理
+  - name: projects
+    description: 项目管理
+
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      summary: 健康检查
+      description: 检查API服务状态
+      operationId: healthCheck
+      responses:
+        '200':
+          description: 服务正常运行
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: 用户注册
+      description: 创建新用户账户
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: 注册失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: 用户登录
+      description: 使用用户名和密码登录
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: 登录失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: 用户登出
+      description: 退出当前用户会话
+      operationId: logout
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+                  description: 刷新令牌
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 登出失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/token/refresh:
+    post:
+      tags:
+        - auth
+      summary: 刷新访问令牌
+      description: 使用刷新令牌获取新的访问令牌
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh
+              properties:
+                refresh:
+                  type: string
+                  description: 刷新令牌
+      responses:
+        '200':
+          description: 令牌刷新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                    description: 新的访问令牌
+        '401':
+          description: 刷新令牌无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags:
+        - auth
+      summary: 获取当前用户信息
+      description: 获取当前登录用户的详细信息
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 用户信息获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: 未授权访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - auth
+      summary: 更新用户资料
+      description: 更新当前用户的个人资料
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: 资料更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          description: 更新失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/change-password:
+    post:
+      tags:
+        - auth
+      summary: 修改密码
+      description: 修改当前用户的登录密码
+      operationId: changePassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: 密码修改成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 密码修改失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/stats:
+    get:
+      tags:
+        - auth
+      summary: 获取用户统计信息
+      description: 获取当前用户的项目统计和权限信息
+      operationId: getUserStats
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 统计信息获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStatsResponse'
+
+  /users:
+    get:
+      tags:
+        - users
+      summary: 获取用户列表
+      description: |
+        获取用户列表，支持搜索、筛选、排序和分页功能
+        
+        **权限说明:**
+        - 管理员可查看所有用户
+        - 普通用户只能查看自己
+        
+        **搜索功能:**
+        - 支持按用户名、邮箱、昵称进行模糊搜索
+        
+        **筛选功能:**
+        - 按激活状态筛选
+        - 按管理员状态筛选
+        - 按超级用户状态筛选
+        - 按注册日期范围筛选
+        
+        **排序功能:**
+        - 支持多字段正序/倒序排列
+        
+        **分页功能:**
+        - 默认每页20条，最大100条
+      operationId: getUserList
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          description: 搜索关键词（支持用户名、邮箱、昵称模糊搜索）
+          required: false
+          schema:
+            type: string
+            example: "admin"
+        - name: is_active
+          in: query
+          description: 筛选激活状态
+          required: false
+          schema:
+            type: boolean
+            example: true
+        - name: is_admin
+          in: query
+          description: 筛选管理员状态
+          required: false
+          schema:
+            type: boolean
+            example: false
+        - name: is_superuser
+          in: query
+          description: 筛选超级用户状态
+          required: false
+          schema:
+            type: boolean
+            example: false
+        - name: date_from
+          in: query
+          description: 注册日期起始时间 (格式 YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - name: date_to
+          in: query
+          description: 注册日期结束时间 (格式 YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-12-31"
+        - name: ordering
+          in: query
+          description: 排序字段
+          required: false
+          schema:
+            type: string
+            enum: 
+              - "id"
+              - "-id"
+              - "username"
+              - "-username"
+              - "email"
+              - "-email"
+              - "nickname"
+              - "-nickname"
+              - "created_at"
+              - "-created_at"
+              - "last_login"
+              - "-last_login"
+              - "is_active"
+              - "-is_active"
+              - "is_admin"
+              - "-is_admin"
+              - "is_superuser"
+              - "-is_superuser"
+            default: "-created_at"
+            example: "-created_at"
+        - name: page
+          in: query
+          description: 页码（从1开始）
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: page_size
+          in: query
+          description: 每页数量（最大100）
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+      responses:
+        '200':
+          description: 用户列表获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListWithPaginationResponse'
+        '403':
+          description: 权限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - users
+      summary: 创建新用户
+      description: 创建新用户（仅管理员可操作）
+      operationId: createUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: 用户创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailResponse'
+        '400':
+          description: 创建失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 权限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{id}:
+    get:
+      tags:
+        - users
+      summary: 获取用户详情
+      description: 获取指定用户的详细信息
+      operationId: getUserDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 用户ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 用户详情获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailResponse'
+        '404':
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - users
+      summary: 更新用户信息
+      description: 更新指定用户的信息（管理员可修改任何用户，普通用户只能修改自己）
+      operationId: updateUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 用户ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: 用户信息更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailResponse'
+        '400':
+          description: 更新失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 权限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - users
+      summary: 删除用户
+      description: 删除指定用户（仅管理员可操作，不能删除自己）
+      operationId: deleteUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 用户ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 用户删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 删除失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 权限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /projects/basic:
+    post:
+      tags:
+        - projects
+      summary: 创建基础项目
+      description: 创建一个基础的剪映草稿项目
+      operationId: createBasicProject
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 基础项目创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '500':
+          description: 创建失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT访问令牌
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "pyJianYingDraft API 服务正常运行"
+        version:
+          type: string
+          example: "1.0.0"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    RegisterRequest:
+      type: object
+      required:
+        - username
+        - password
+        - confirmPassword
+      properties:
+        username:
+          type: string
+          description: 用户名
+          example: "testuser"
+        password:
+          type: string
+          format: password
+          description: 密码
+          example: "password123"
+        confirmPassword:
+          type: string
+          format: password
+          description: 确认密码
+          example: "password123"
+        email:
+          type: string
+          format: email
+          description: 邮箱
+          example: "test@example.com"
+        nickname:
+          type: string
+          description: 昵称
+          example: "测试用户"
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: 用户名
+          example: "testuser"
+        password:
+          type: string
+          format: password
+          description: 密码
+          example: "password123"
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "登录成功"
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            token:
+              type: string
+              description: 访问令牌
+            refresh:
+              type: string
+              description: 刷新令牌
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: "testuser"
+        email:
+          type: string
+          format: email
+          example: "test@example.com"
+        nickname:
+          type: string
+          example: "测试用户"
+        is_active:
+          type: boolean
+          example: true
+        is_admin:
+          type: boolean
+          example: false
+        date_joined:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+        permissions:
+          type: object
+          properties:
+            is_admin:
+              type: boolean
+            is_superuser:
+              type: boolean
+            can_manage_users:
+              type: boolean
+            can_access_api_debug:
+              type: boolean
+            can_view_all_projects:
+              type: boolean
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: 邮箱
+        nickname:
+          type: string
+          description: 昵称
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - old_password
+        - new_password
+      properties:
+        old_password:
+          type: string
+          format: password
+          description: 当前密码
+        new_password:
+          type: string
+          format: password
+          description: 新密码
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: 用户名
+        password:
+          type: string
+          format: password
+          description: 密码
+        email:
+          type: string
+          format: email
+          description: 邮箱
+        nickname:
+          type: string
+          description: 昵称
+        is_admin:
+          type: boolean
+          description: 是否为管理员
+          default: false
+        is_active:
+          type: boolean
+          description: 是否激活
+          default: true
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: 邮箱
+        nickname:
+          type: string
+          description: 昵称
+        is_admin:
+          type: boolean
+          description: 是否为管理员
+        is_active:
+          type: boolean
+          description: 是否激活
+
+    UserProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/User'
+
+    UserDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/User'
+
+    UserStatsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            project_stats:
+              type: object
+              properties:
+                total:
+                  type: integer
+                  description: 总项目数
+                completed:
+                  type: integer
+                  description: 已完成项目数
+                processing:
+                  type: integer
+                  description: 处理中项目数
+                draft:
+                  type: integer
+                  description: 草稿项目数
+            recent_projects:
+              type: integer
+              description: 最近7天创建的项目数
+            user_info:
+              $ref: '#/components/schemas/User'
+
+    ProjectResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "基础项目创建成功"
+        project_info:
+          type: object
+          properties:
+            id:
+              type: integer
+              description: 项目ID
+            name:
+              type: string
+              description: 项目名称
+            type:
+              type: string
+              description: 项目类型
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          description: 成功消息
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          description: 错误消息
+        errors:
+          type: object
+          description: 详细错误信息
+          additionalProperties: true
+
+    UserListWithPaginationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+        filters:
+          $ref: '#/components/schemas/UserListFilters'
+
+    PaginationInfo:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: 总记录数
+          example: 50
+        page:
+          type: integer
+          description: 当前页码
+          example: 1
+        page_size:
+          type: integer
+          description: 每页记录数
+          example: 20
+        total_pages:
+          type: integer
+          description: 总页数
+          example: 3
+        has_next:
+          type: boolean
+          description: 是否有下一页
+          example: true
+        has_previous:
+          type: boolean
+          description: 是否有上一页
+          example: false
+
+    UserListFilters:
+      type: object
+      properties:
+        search:
+          type: string
+          description: 搜索关键词
+          example: ""
+        is_active:
+          type: string
+          nullable: true
+          description: 激活状态筛选
+          example: null
+        is_admin:
+          type: string
+          nullable: true
+          description: 管理员状态筛选
+          example: null
+        is_superuser:
+          type: string
+          nullable: true
+          description: 超级用户状态筛选
+          example: null
+        date_from:
+          type: string
+          nullable: true
+          description: 起始日期
+          example: null
+        date_to:
+          type: string
+          nullable: true
+          description: 结束日期
+          example: null
+        ordering:
+          type: string
+          description: 排序字段
+          example: "-created_at"

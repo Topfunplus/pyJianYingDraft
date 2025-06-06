@@ -6,6 +6,9 @@ from rest_framework import serializers
 
 User = get_user_model()
 
+# 这个类是用来序列化用户数据的
+# 主要用于用户信息的展示和处理
+
 
 class UserSerializer(serializers.ModelSerializer):
     """用户序列化器"""
@@ -119,6 +122,9 @@ class UserManagementSerializer(serializers.ModelSerializer):
     """用户管理序列化器 - 用于管理员创建/管理用户"""
     password = serializers.CharField(write_only=True, required=False)
     permissions = serializers.SerializerMethodField()
+
+    # classMeta 定义了序列化器的元数据
+    # 是用来定义序列化器的字段、只读字段和其他配置
 
     class Meta:
         model = User

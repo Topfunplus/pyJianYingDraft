@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from typing import cast
+from django.db.models import QuerySet, Q
 
 from api.models import Project
 from django.contrib.auth import get_user_model
@@ -18,6 +19,8 @@ from .serializers import (
 
 User = get_user_model()
 logger = logging.getLogger('api')
+
+# 用户注册的相关API
 
 
 class RegisterView(APIView):
@@ -56,7 +59,7 @@ class RegisterView(APIView):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
-# 登录的相关
+# 登录的相关API
 class LoginView(APIView):
     """用户登录"""
     permission_classes = [permissions.AllowAny]
@@ -103,6 +106,7 @@ class LoginView(APIView):
         return ip
 
 
+# 登出的相关API
 class LogoutView(APIView):
     """用户登出"""
     permission_classes = [permissions.IsAuthenticated]
@@ -125,6 +129,7 @@ class LogoutView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
+# 用户资料管理的相关API
 class UserProfileView(APIView):
     """用户资料管理"""
     permission_classes = [permissions.IsAuthenticated]
@@ -192,18 +197,79 @@ class UserListView(generics.ListCreateAPIView):
     serializer_class = UserSerializer
     queryset = User.objects.all()
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type:
         # POST请求使用管理序列化器，GET请求使用普通序列化器
         if self.request.method == 'POST':
             from .serializers import UserManagementSerializer
             return UserManagementSerializer
         return UserSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         # 只有管理员可以看到所有用户，普通用户只能看到自己
         if self.request.user.is_admin or self.request.user.is_superuser:
-            return User.objects.all().order_by('-created_at')
-        return User.objects.filter(id=self.request.user.id)
+            queryset = User.objects.all().order_by('-created_at')
+        else:
+            queryset = User.objects.filter(id=self.request.user.id)
+
+        # 添加搜索功能
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            # 支持按用户名、邮箱、昵称进行模糊搜索
+            queryset = queryset.filter(
+                Q(username__icontains=search) |
+                Q(email__icontains=search) |
+                Q(nickname__icontains=search)
+            )
+
+        # 添加状态筛选
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            is_active_bool = is_active.lower() in ['true', '1', 'yes', 'on']
+            queryset = queryset.filter(is_active=is_active_bool)
+
+        # 添加管理员状态筛选
+        is_admin = self.request.query_params.get('is_admin')
+        if is_admin is not None:
+            is_admin_bool = is_admin.lower() in ['true', '1', 'yes', 'on']
+            queryset = queryset.filter(is_admin=is_admin_bool)
+
+        # 添加超级用户状态筛选
+        is_superuser = self.request.query_params.get('is_superuser')
+        if is_superuser is not None:
+            is_superuser_bool = is_superuser.lower() in ['true', '1', 'yes', 'on']
+            queryset = queryset.filter(is_superuser=is_superuser_bool)
+
+        # 添加日期范围筛选
+        date_from = self.request.query_params.get('date_from')
+        date_to = self.request.query_params.get('date_to')
+        if date_from:
+            try:
+                from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+                queryset = queryset.filter(created_at__date__gte=from_date)
+            except ValueError:
+                pass  # 忽略无效日期格式
+
+        if date_to:
+            try:
+                to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+                queryset = queryset.filter(created_at__date__lte=to_date)
+            except ValueError:
+                pass  # 忽略无效日期格式
+
+        # 添加排序功能
+        ordering = self.request.query_params.get('ordering', '-created_at')
+        valid_orderings = [
+            'id', '-id', 'username', '-username', 'email', '-email',
+            'nickname', '-nickname', 'created_at', '-created_at',
+            'last_login', '-last_login', 'is_active', '-is_active',
+            'is_admin', '-is_admin', 'is_superuser', '-is_superuser'
+        ]
+        if ordering in valid_orderings:
+            queryset = queryset.order_by(ordering)
+        else:
+            queryset = queryset.order_by('-created_at')
+
+        return queryset
 
     def get_permissions(self):
         # 获取用户列表需要登录，创建用户需要管理员权限
@@ -214,15 +280,57 @@ class UserListView(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         """重写列表方法，返回格式化的用户列表"""
         queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
+        
+        # 分页处理
+        page_size = int(self.request.query_params.get('page_size', 20))
+        page = int(self.request.query_params.get('page', 1))
+        
+        # 限制每页最大数量
+        page_size = min(page_size, 100)
+        
+        # 计算偏移量
+        offset = (page - 1) * page_size
+        total_count = queryset.count()
+        
+        # 应用分页
+        paginated_queryset = queryset[offset:offset + page_size]
+        
+        serializer = self.get_serializer(paginated_queryset, many=True)
+
+        # 获取搜索参数用于日志记录
+        search_params = {
+            'search': self.request.query_params.get('search', ''),
+            'is_active': self.request.query_params.get('is_active'),
+            'is_admin': self.request.query_params.get('is_admin'),
+            'ordering': self.request.query_params.get('ordering', '-created_at'),
+            'page': page,
+            'page_size': page_size
+        }
 
         logger.info(
-            f"📋 用户 {request.user.username} 获取用户列表，数量: {queryset.count()}")
+            f"📋 用户 {request.user.username} 获取用户列表，总数: {total_count}，"
+            f"当前页: {page}，每页: {page_size}，搜索条件: {search_params}")
 
         return Response({
             'success': True,
             'data': serializer.data,
-            'total': queryset.count()
+            'pagination': {
+                'total': total_count,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': (total_count + page_size - 1) // page_size,
+                'has_next': offset + page_size < total_count,
+                'has_previous': page > 1
+            },
+            'filters': {
+                'search': self.request.query_params.get('search', ''),
+                'is_active': self.request.query_params.get('is_active'),
+                'is_admin': self.request.query_params.get('is_admin'),
+                'is_superuser': self.request.query_params.get('is_superuser'),
+                'date_from': self.request.query_params.get('date_from'),
+                'date_to': self.request.query_params.get('date_to'),
+                'ordering': self.request.query_params.get('ordering', '-created_at')
+            }
         })
 
     def create(self, request, *args, **kwargs):
@@ -260,13 +368,13 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = User.objects.all()
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         # 只有管理员可以管理所有用户，普通用户只能管理自己
         if self.request.user.is_admin or self.request.user.is_superuser:
             return User.objects.all()
         return User.objects.filter(id=self.request.user.id)
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type:
         # 更新操作使用管理序列化器
         if self.request.method in ['PUT', 'PATCH']:
             from .serializers import UserManagementSerializer
